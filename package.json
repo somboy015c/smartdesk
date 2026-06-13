@@ -1,0 +1,36 @@
+{
+  "name": "smartdesk",
+  "version": "1.0.0",
+  "description": "Smart Desk",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": " electron .",
+    "start:cds": "env -u ELECTRON_RUN_AS_NODE electron . --cds",
+    "serve": "python3 -m http.server 8765",
+    "test": "npm run test:sqlite && npm run test:playwright && npm run test:selenium",
+    "test:sqlite": "node tests/sqlite-store.test.js",
+    "test:playwright": "playwright test",
+    "test:selenium": "node tests/selenium-smoke.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hassan1303/smartdesk.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hassan1303/smartdesk/issues"
+  },
+  "homepage": "https://github.com/hassan1303/smartdesk#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "electron": "^42.4.0",
+    "selenium-webdriver": "^4.25.0"
+  },
+  "dependencies": {
+    "mammoth": "^1.12.0",
+    "read-excel-file": "^9.1.1",
+    "sql.js": "^1.14.1"
+  }
+}

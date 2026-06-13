@@ -424,6 +424,18 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .hidden { display: none !important; }
+        .verification-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; }
+        .verification-sidebar { border-right: 1px solid var(--border); padding-right: 12px; max-height: 560px; overflow-y: auto; }
+        .verification-group-btn { width: 100%; text-align: left; border: 1px solid var(--border); background: #fff; border-radius: var(--radius); padding: 10px; margin-bottom: 8px; cursor: pointer; color: #333; }
+        .verification-group-btn.active { border-color: var(--primary); background: rgba(0, 78, 43, 0.08); color: var(--primary); font-weight: 700; }
+        .verification-member-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; background: #fff; min-height: 220px; }
+        .verification-member-name { color: var(--primary); font-size: 1.7rem; line-height: 1.1; margin: 8px 0; word-break: break-word; }
+        .verification-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+        .sync-url-box { margin-top: 12px; padding: 10px; border: 1px dashed var(--border); border-radius: var(--radius); background: #f8f9fa; color: #333; word-break: break-all; font-size: 0.85rem; }
+        .notice { padding: 11px 12px; border-radius: var(--radius); font-weight: 600; }
+        .notice.info { background: #d8eef6; color: #0b526b; }
+        .notice.error { background: #f8d7da; color: #842029; }
+        .notice.success { background: #d8f3df; color: #105c2f; }
         
         .batch-item, .executive-item { background: #f8f9fa; border-radius: var(--radius); padding: 10px 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
         
@@ -726,6 +738,8 @@
             .info-grid { grid-template-columns: 1fr; }
             .checkbox-group-container { grid-template-columns: 1fr; }
             .meeting-detail-label { width: 100px; }
+            .verification-layout { grid-template-columns: 1fr; }
+            .verification-sidebar { border-right: 0; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 12px; max-height: 220px; }
         }
         
         textarea.form-control { resize: vertical; }
@@ -892,7 +906,8 @@
                         <div class="search-bar">
                             <select id="attendanceMeetingFilter" class="filter-select" style="flex:1"><option value="">Select Meeting</option></select>
                             <button class="btn btn-primary" onclick="loadAttendanceRecords()">Load Records</button>
-                            <button class="btn btn-success" onclick="takeAttendanceForCurrentMeeting()"><i class="fas fa-check"></i> Verify & Conclude Meeting</button>
+                            <button class="btn btn-success" onclick="openVerificationModalForCurrentMeeting()"><i class="fas fa-user-check"></i> Verify Attendance</button>
+                            <button class="btn btn-warning" onclick="concludeCurrentMeetingFromAttendance()"><i class="fas fa-flag-checkered"></i> Conclude Event</button>
                         </div>
                         <div class="table-container">
                             <table class="data-table" id="attendanceTable">
@@ -909,7 +924,7 @@
                 <div class="card">
                     <div class="card-header"><div class="card-title"><i class="fas fa-chart-bar"></i> Reports & Analytics</div></div>
                     <div class="card-body">
-                        <div class="form-grid"><div class="form-group"><label class="form-label">Report Type</label><select id="reportType" class="form-control"><option value="attendance">Attendance Report</option><option value="members">Corps Members Report</option><option value="groups">CDS Groups Report</option><option value="defaulters">Defaulters Report</option></select></div><div class="form-group"><label class="form-label">Meeting (for attendance)</label><select id="reportMeeting" class="form-control"><option value="">Select Meeting</option></select></div><div class="form-group"><label class="form-label">Format</label><select id="reportFormat" class="form-control"><option value="html">HTML View</option><option value="csv">CSV Export</option></select></div></div>
+                        <div class="form-grid"><div class="form-group"><label class="form-label">Report Type</label><select id="reportType" class="form-control"><option value="attendance">Attendance Report</option><option value="eventSummary">Event Summary</option><option value="members">Corps Members Report</option><option value="groups">CDS Groups Report</option><option value="defaulters">Defaulters Report</option></select></div><div class="form-group"><label class="form-label">Meeting (for attendance)</label><select id="reportMeeting" class="form-control"><option value="">Select Meeting</option></select></div><div class="form-group"><label class="form-label">Format</label><select id="reportFormat" class="form-control"><option value="html">HTML/PDF Print View</option><option value="csv">CSV Export</option></select></div></div>
                         <div class="btn-group"><button class="btn btn-primary" onclick="generateReport()"><i class="fas fa-chart-bar"></i> Generate Report</button><button class="btn btn-success" onclick="exportReport()"><i class="fas fa-download"></i> Export</button></div>
                         <div id="reportPreview" style="margin-top:20px; padding:15px; background:#f8f9fa; border-radius:var(--radius); max-height:500px; overflow-y:auto;"><p style="color:var(--muted);">Select report type and click Generate</p></div>
                     </div>
@@ -933,7 +948,7 @@
 </div>
 
 <!-- Register Modal (shortened for length) -->
-<div id="registerModal" class="modal-overlay"><div class="modal" style="max-width: 1200px;"><div class="modal-header"><h3><i class="fas fa-user-plus"></i> Register Corps Member</h3><button class="modal-close" onclick="closeRegisterModal()">&times;</button></div><div class="modal-body"><form id="registerForm"><h4 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-user-circle"></i> Personal Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Passport Photo</label><div class="portrait-upload" onclick="document.getElementById('passportInput').click()"><i class="fas fa-camera" style="font-size: 24px; color: var(--primary);"></i><p style="font-size: 12px; margin-top: 5px;">Click to upload passport</p><img id="passportPreview" class="portrait-preview" alt="Passport Preview"><input type="file" id="passportInput" accept="image/*" style="display: none;" onchange="compressAndPreviewPassport(this)"></div></div><div class="form-group"><label class="form-label">File Number *</label><input type="text" id="regFileNumber" class="form-control" placeholder="e.g., NYSC/FN/2025/001" required></div><div class="form-group"><label class="form-label">State Code Number *</label><input type="text" id="regStateCodeNumber" class="form-control" placeholder="e.g., NYSC/2025/12345" required></div><div class="form-group"><label class="form-label">Surname *</label><input type="text" id="regSurname" class="form-control" required></div><div class="form-group"><label class="form-label">First Name *</label><input type="text" id="regFirstName" class="form-control" required></div><div class="form-group"><label class="form-label">Other Name</label><input type="text" id="regOtherName" class="form-control"></div><div class="form-group"><label class="form-label">Maiden Name</label><input type="text" id="regMaidenName" class="form-control" placeholder="Maiden name if married"></div><div class="form-group"><label class="form-label">Date of Birth *</label><input type="date" id="regDob" class="form-control" required></div><div class="form-group"><label class="form-label">Sex *</label><select id="regSex" class="form-control" required><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></div><div class="form-group"><label class="form-label">Marital Status *</label><select id="regMaritalStatus" class="form-control" required><option value="">Select</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-address-card"></i> Contact Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Phone Number</label><input type="tel" id="regPhone" class="form-control"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="regEmail" class="form-control"></div><div class="form-group"><label class="form-label">Bank Name</label><input type="text" id="regBankName" class="form-control"></div><div class="form-group"><label class="form-label">Account Number</label><input type="text" id="regAccountNumber" class="form-control"></div><div class="form-group"><label class="form-label">Account Name</label><input type="text" id="regAccountName" class="form-control"></div><div class="form-group"><label class="form-label">Call-up Number</label><input type="text" id="regCallupNumber" class="form-control"></div><div class="form-group"><label class="form-label">Permanent Home Address</label><textarea id="regPermanentAddress" class="form-control" rows="2"></textarea></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-graduation-cap"></i> Education & CDS Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Course of Study</label><input type="text" id="regCourse" class="form-control"></div><div class="form-group"><label class="form-label">Institution</label><input type="text" id="regInstitution" class="form-control"></div><div class="form-group"><label class="form-label">Qualification</label><select id="regQualification" class="form-control"><option value="">Select</option><option value="B.Sc">B.Sc</option><option value="HND">HND</option><option value="NCE">NCE</option></select></div><div class="form-group"><label class="form-label">Grade</label><input type="text" id="regGrade" class="form-control"></div><div class="form-group"><label class="form-label">CDS Group *</label><select id="regGroup" class="form-control" required><option value="">Select Group</option></select></div><div class="form-group"><label class="form-label">Batch *</label><select id="regBatch" class="form-control" required><option value="">Select Batch</option></select></div><div class="form-group"><label class="form-label">PPA</label><input type="text" id="regPpa" class="form-control"></div><div class="form-group"><label class="form-label">Status</label><select id="regStatus" class="form-control"><option value="Serving">Serving</option><option value="Service Extended">Service Extended</option><option value="Passed Out">Passed Out</option></select></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-heartbeat"></i> Health Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Illness?</label><select id="regHasIllness" class="form-control" onchange="toggleIllnessField()"><option value="No">No</option><option value="Yes">Yes</option></select></div><div class="form-group" id="illnessDetailsField" style="display: none;"><label class="form-label">If Yes, State Illness</label><input type="text" id="regIllnessDetails" class="form-control"></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-users"></i> Next of Kin & Emergency Contact</h4><div class="form-grid"><div class="form-group"><label class="form-label">Next of Kin Name</label><input type="text" id="regNextOfKinName" class="form-control"></div><div class="form-group"><label class="form-label">Next of Kin Phone</label><input type="tel" id="regNextOfKinPhone" class="form-control"></div><div class="form-group"><label class="form-label">Emergency Contact Name</label><input type="text" id="regEmergencyName" class="form-control"></div><div class="form-group"><label class="form-label">Emergency Contact Address</label><textarea id="regEmergencyAddress" class="form-control" rows="2"></textarea></div><div class="form-group"><label class="form-label">Emergency Contact Phone</label><input type="tel" id="regEmergencyPhone" class="form-control"></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeRegisterModal()">Cancel</button><button class="btn btn-primary" onclick="registerCorpsMember()">Register Member</button></div></div></div>
+<div id="registerModal" class="modal-overlay"><div class="modal" style="max-width: 1200px;"><div class="modal-header"><h3><i class="fas fa-user-plus"></i> Register Corps Member</h3><button class="modal-close" onclick="closeRegisterModal()">&times;</button></div><div class="modal-body"><form id="registerForm"><h4 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-user-circle"></i> Personal Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Passport Photo</label><div class="portrait-upload" onclick="document.getElementById('passportInput').click()"><i class="fas fa-camera" style="font-size: 24px; color: var(--primary);"></i><p style="font-size: 12px; margin-top: 5px;">Click to upload passport</p><img id="passportPreview" class="portrait-preview" alt="Passport Preview"><input type="file" id="passportInput" accept="image/*" style="display: none;" onchange="compressAndPreviewPassport(this)"></div></div><div class="form-group"><label class="form-label">File Number *</label><input type="text" id="regFileNumber" class="form-control" placeholder="e.g., NYSC/FN/2025/001" required></div><div class="form-group"><label class="form-label">State Code Number *</label><input type="text" id="regStateCodeNumber" class="form-control" placeholder="e.g., NYSC/2025/12345" required></div><div class="form-group"><label class="form-label">Surname *</label><input type="text" id="regSurname" class="form-control" required></div><div class="form-group"><label class="form-label">First Name *</label><input type="text" id="regFirstName" class="form-control" required></div><div class="form-group"><label class="form-label">Other Name</label><input type="text" id="regOtherName" class="form-control"></div><div class="form-group"><label class="form-label">Maiden Name</label><input type="text" id="regMaidenName" class="form-control" placeholder="Maiden name if married"></div><div class="form-group"><label class="form-label">Date of Birth *</label><input type="date" id="regDob" class="form-control" required></div><div class="form-group"><label class="form-label">Sex *</label><select id="regSex" class="form-control" required><option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option></select></div><div class="form-group"><label class="form-label">Marital Status *</label><select id="regMaritalStatus" class="form-control" required><option value="">Select</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-address-card"></i> Contact Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Phone Number</label><input type="tel" id="regPhone" class="form-control"></div><div class="form-group"><label class="form-label">Email</label><input type="email" id="regEmail" class="form-control"></div><div class="form-group"><label class="form-label">Bank Name</label><input type="text" id="regBankName" class="form-control"></div><div class="form-group"><label class="form-label">Account Number</label><input type="text" id="regAccountNumber" class="form-control"></div><div class="form-group"><label class="form-label">Account Name</label><input type="text" id="regAccountName" class="form-control"></div><div class="form-group"><label class="form-label">Call-up Number</label><input type="text" id="regCallupNumber" class="form-control"></div><div class="form-group"><label class="form-label">Permanent Home Address</label><textarea id="regPermanentAddress" class="form-control" rows="2"></textarea></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-graduation-cap"></i> Education & CDS Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Course of Study</label><input type="text" id="regCourse" class="form-control"></div><div class="form-group"><label class="form-label">Institution</label><input type="text" id="regInstitution" class="form-control"></div><div class="form-group"><label class="form-label">Qualification</label><select id="regQualification" class="form-control"><option value="">Select</option><option value="B.Sc">B.Sc</option><option value="HND">HND</option><option value="NCE">NCE</option></select></div><div class="form-group"><label class="form-label">Grade</label><input type="text" id="regGrade" class="form-control"></div><div class="form-group"><label class="form-label">CDS Group *</label><select id="regGroup" class="form-control" required><option value="">Select Group</option></select></div><div class="form-group"><label class="form-label">Batch *</label><select id="regBatch" class="form-control" required><option value="">Select Batch</option></select></div><div class="form-group"><label class="form-label">PPA</label><input type="text" id="regPpa" class="form-control"></div><div class="form-group"><label class="form-label">Status</label><select id="regStatus" class="form-control" onchange="toggleServiceExtensionFields()"><option value="Serving">Serving</option><option value="Service Extended">Service Extended</option><option value="Passed Out">Passed Out</option><option value="Relocated">Relocated</option><option value="Absconded">Absconded</option></select></div></div><div id="serviceExtensionSection" class="meeting-dynamic-section" style="display: none;"><h4 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-clock"></i> Service Extension</h4><div class="form-grid"><div class="form-group"><label class="form-label">Extension Duration</label><input type="text" id="regExtensionDuration" class="form-control" placeholder="e.g., 3 months"></div><div class="form-group"><label class="form-label">New POP Date</label><input type="date" id="regNewPopDate" class="form-control"></div><div class="form-group" style="grid-column: span 2;"><label class="form-label">Extension Reason</label><textarea id="regExtensionReason" class="form-control" rows="2" placeholder="Reason for service extension"></textarea></div></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-heartbeat"></i> Health Information</h4><div class="form-grid"><div class="form-group"><label class="form-label">Illness?</label><select id="regHasIllness" class="form-control" onchange="toggleIllnessField()"><option value="No">No</option><option value="Yes">Yes</option></select></div><div class="form-group" id="illnessDetailsField" style="display: none;"><label class="form-label">If Yes, State Illness</label><input type="text" id="regIllnessDetails" class="form-control"></div></div><h4 style="color: var(--primary); margin: 20px 0 15px;"><i class="fas fa-users"></i> Next of Kin & Emergency Contact</h4><div class="form-grid"><div class="form-group"><label class="form-label">Next of Kin Name</label><input type="text" id="regNextOfKinName" class="form-control"></div><div class="form-group"><label class="form-label">Next of Kin Phone</label><input type="tel" id="regNextOfKinPhone" class="form-control"></div><div class="form-group"><label class="form-label">Emergency Contact Name</label><input type="text" id="regEmergencyName" class="form-control"></div><div class="form-group"><label class="form-label">Emergency Contact Address</label><textarea id="regEmergencyAddress" class="form-control" rows="2"></textarea></div><div class="form-group"><label class="form-label">Emergency Contact Phone</label><input type="tel" id="regEmergencyPhone" class="form-control"></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeRegisterModal()">Cancel</button><button class="btn btn-primary" onclick="registerCorpsMember()">Register Member</button></div></div></div>
 
 <!-- Member Detail Modal -->
 <div id="memberDetailModal" class="modal-overlay" style="z-index: 1100;"><div class="modal" style="max-width: 1000px;"><div class="modal-header"><h3><i class="fas fa-id-card"></i> Member Profile</h3><div><button class="btn btn-sm btn-secondary" onclick="exportMemberProfileToPDF()" style="margin-right: 10px;"><i class="fas fa-file-pdf"></i> Print PDF</button><button class="btn btn-sm btn-success" onclick="exportMemberProfileToExcel()"><i class="fas fa-file-excel"></i> Export Excel</button><button class="modal-close" onclick="closeMemberDetailModal()" style="margin-left: 15px;">&times;</button></div></div><div class="modal-body" id="memberDetailContent"></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeMemberDetailModal()">Close</button></div></div></div>
@@ -965,8 +980,10 @@
 
 <div id="deleteGroupConfirmModal" class="modal-overlay"><div class="modal" style="max-width: 400px;"><div class="modal-header"><h3><i class="fas fa-trash"></i> Delete CDS Group</h3><button class="modal-close" onclick="closeDeleteGroupModal()">&times;</button></div><div class="modal-body"><p id="deleteGroupMessage">Are you sure you want to delete this CDS group?</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeDeleteGroupModal()">Cancel</button><button class="btn btn-danger" id="deleteGroupConfirmBtn" onclick="confirmDeleteGroup()">Delete</button></div></div></div>
 
-<div id="importModal" class="modal-overlay"><div class="modal"><div class="modal-header"><h3>Bulk Import Corps Members</h3><button class="modal-close" onclick="closeImportModal()">&times;</button></div><div class="modal-body"><div class="form-group"><label>Select File (CSV)</label><input type="file" id="importFile" class="form-control" accept=".csv"></div><div class="form-group"><label>Format Preview</label><textarea class="form-control" rows="4" readonly style="font-size:0.8rem; background:#f5f5f5;">Surname,FirstName,StateCode,Phone,CDSGroup,Batch,PPA,Status
-Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serving</textarea></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button><button class="btn btn-primary" onclick="processImport()">Import</button></div></div></div>
+<div id="importModal" class="modal-overlay"><div class="modal"><div class="modal-header"><h3>Bulk Import Corps Members</h3><button class="modal-close" onclick="closeImportModal()">&times;</button></div><div class="modal-body"><div class="form-group"><label>Select File (CSV, Excel, Word, or TXT)</label><input type="file" id="importFile" class="form-control" accept=".csv,.xlsx,.xls,.docx,.txt"></div><div class="form-group"><label>Supported Columns</label><textarea class="form-control" rows="5" readonly style="font-size:0.8rem; background:#f5f5f5;">Surname,FirstName,StateCode,Phone,CDSGroup,Batch,PPA,Status,Email,Sex
+Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serving,john@example.com,Male
+
+Word files can use the same comma-separated or tabular text format.</textarea></div><div id="importPreview" style="margin-top: 10px;"></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeImportModal()">Cancel</button><button class="btn btn-primary" onclick="processImport()">Import</button></div></div></div>
 
 <div id="logoutConfirmModal" class="modal-overlay"><div class="modal" style="max-width: 400px;"><div class="modal-header"><h3><i class="fas fa-sign-out-alt"></i> Confirm Logout</h3><button class="modal-close" onclick="closeLogoutModal()">&times;</button></div><div class="modal-body"><p>Are you sure you want to logout?</p></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeLogoutModal()">Cancel</button><button class="btn btn-danger" onclick="confirmLogout()">Logout</button></div></div></div>
 
@@ -978,10 +995,30 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
 
 <div id="takeAttendanceModal" class="modal-overlay"><div class="modal" style="max-width: 800px;"><div class="modal-header"><h3><i class="fas fa-clipboard-list"></i> Take Attendance</h3><button class="modal-close" onclick="closeTakeAttendanceModal()">&times;</button></div><div class="modal-body"><h4 id="attendanceMeetingTitle" style="margin-bottom: 15px;">Meeting: </h4><div class="search-bar"><input type="text" id="attendanceSearchInput" class="search-input" placeholder="Search members..."><select id="attendanceGroupFilter" class="filter-select"><option value="">All Groups</option></select><button class="btn btn-success" onclick="markAllPresent()"><i class="fas fa-check-double"></i> Mark All Present</button></div><div class="table-container"><table class="data-table"><thead><th>Member Name</th><th>State Code</th><th>CDS Group</th><th>Status</th><th>Action</th></thead><tbody id="attendanceMembersList"></tbody></table></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeTakeAttendanceModal()">Cancel</button><button class="btn btn-primary" onclick="saveAttendance()">Save Attendance</button></div></div></div>
 
+<div id="verificationModal" class="modal-overlay"><div class="modal" style="max-width: 1100px;"><div class="modal-header"><h3><i class="fas fa-user-check"></i> Verify Attendance</h3><button class="modal-close" onclick="closeVerificationModal()">&times;</button></div><div class="modal-body"><div id="verificationSummary" style="margin-bottom: 12px;"></div><div class="verification-layout"><aside class="verification-sidebar" id="verificationGroupList"></aside><section><div id="verificationMemberPanel"></div><div class="verification-actions"><button class="btn btn-success" onclick="markVerificationMember('present')"><i class="fas fa-check"></i> Present</button><button class="btn btn-danger" onclick="markVerificationMember('absent')"><i class="fas fa-times"></i> Absent</button><button class="btn btn-warning" onclick="skipVerificationMember()"><i class="fas fa-forward"></i> Skip</button><button class="btn btn-secondary" onclick="moveVerificationMember(-1)"><i class="fas fa-arrow-left"></i> Previous</button><button class="btn btn-secondary" onclick="moveVerificationMember(1)">Next <i class="fas fa-arrow-right"></i></button><button class="btn btn-info" onclick="speakCurrentVerificationMember()"><i class="fas fa-volume-up"></i> Speak Name</button></div><label style="display:flex; align-items:center; gap:8px; margin-top:12px; color: var(--muted);"><input type="checkbox" id="verificationAutoSpeak" checked onchange="verificationState.autoSpeak = this.checked;"> Auto read names aloud</label></section></div></div><div class="modal-footer"><button class="btn btn-secondary" onclick="closeVerificationModal()">Close</button><button class="btn btn-primary" onclick="saveVerificationRecords()"><i class="fas fa-save"></i> Save Verification</button><button class="btn btn-warning" onclick="concludeVerificationMeeting()"><i class="fas fa-flag-checkered"></i> Conclude Event</button></div></div></div>
+
+<script src="node_modules/read-excel-file/bundle/read-excel-file.min.js"></script>
+<script src="node_modules/mammoth/mammoth.browser.min.js"></script>
 <script>
-    const STORAGE_KEY = 'smart_desk_data_v11';
-    const USERS_KEY = 'smart_desk_users_v1';
-    const SESSION_KEY = 'smart_desk_session';
+	    const STORAGE_KEY = 'smart_desk_data_v11';
+	    const USERS_KEY = 'smart_desk_users_v1';
+	    const SESSION_KEY = 'smart_desk_session';
+	    const PAIRING_PACKAGES_KEY = 'smart_desk_pairing_packages_v1';
+	    const PAIRING_RESULTS_KEY = 'smart_desk_pairing_results_v1';
+	    const NIGERIAN_STATES = [
+	        'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+	        'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Federal Capital Territory (FCT)',
+	        'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+	        'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
+	        'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+	    ];
+	    const appStorage = createPersistentStorage([
+	        STORAGE_KEY,
+	        USERS_KEY,
+	        SESSION_KEY,
+	        PAIRING_PACKAGES_KEY,
+	        PAIRING_RESULTS_KEY
+	    ]);
     
     let appData = {
         lgaName: '', stateName: '', officeAddress: '', contactPhone: '', contactEmail: '',
@@ -995,21 +1032,67 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     let pendingConcludeMeetingId = null, pendingDeleteMeetingId = null, pendingDeleteMemberId = null, pendingDeleteGroupId = null, pendingEditMeetingId = null;
     let passportDataUrl = null, currentViewingMember = null;
     let customSelectedMembers = new Set(), editCustomSelectedMembers = new Set();
-    let pendingEditBatchIndex = null, pendingEditPositionIndex = null;
-    let currentAttendanceMeeting = null, attendanceTempRecords = {};
-    let currentShareData = null, currentReceiveData = null, generatedPairingCode = null;
+	    let pendingEditBatchIndex = null, pendingEditPositionIndex = null;
+	    let currentAttendanceMeeting = null, attendanceTempRecords = {};
+	    let currentShareData = null, currentReceiveData = null, generatedPairingCode = null;
+	    let verificationState = { meeting: null, groups: [], groupId: null, memberIndex: 0, records: {}, autoSpeak: true };
+	    
+	    function createPersistentStorage(keysToMigrate) {
+	        if (!window.smartDeskStorage) return window.localStorage;
+	        keysToMigrate.forEach(key => {
+	            const sqliteValue = window.smartDeskStorage.getItem(key);
+	            const browserValue = window.localStorage.getItem(key);
+	            if (sqliteValue === null && browserValue !== null) {
+	                window.smartDeskStorage.setItem(key, browserValue);
+	            }
+	        });
+	        return window.smartDeskStorage;
+	    }
+	    
+	    function showNotification(message, type) {
+	        type = type || 'info';
+	        const n = document.createElement('div');
+	        n.className = `notification ${type}`;
+	        n.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
+	        document.body.appendChild(n);
+	        setTimeout(() => n.remove(), 3000);
+	    }
+	    
+	    function normalizeStateName(value) {
+	        return String(value || '').trim().toLowerCase();
+	    }
+	    
+	    function isValidNigerianState(value) {
+	        const normalized = normalizeStateName(value);
+	        return NIGERIAN_STATES.some(state => normalizeStateName(state) === normalized);
+	    }
+	    
+	    function initNigeriaStateFields() {
+	        if (!document.getElementById('nigeriaStatesList')) {
+	            const list = document.createElement('datalist');
+	            list.id = 'nigeriaStatesList';
+	            list.innerHTML = NIGERIAN_STATES.map(state => `<option value="${state}"></option>`).join('');
+	            document.body.appendChild(list);
+	        }
+	        ['stateName', 'mandatoryStateName'].forEach(id => {
+	            const input = document.getElementById(id);
+	            if (!input) return;
+	            input.setAttribute('list', 'nigeriaStatesList');
+	            input.setAttribute('placeholder', 'Search/select Nigerian state');
+	            input.setAttribute('autocomplete', 'off');
+	            if (!input.dataset.stateHintAdded) {
+	                const hint = document.createElement('small');
+	                hint.className = 'state-helper';
+	                hint.style.cssText = 'display:block; margin-top:5px; color:var(--muted); font-size:0.74rem;';
+	                hint.textContent = 'Start typing, then choose a Nigerian state or FCT.';
+	                input.insertAdjacentElement('afterend', hint);
+	                input.dataset.stateHintAdded = 'true';
+	            }
+	        });
+	    }
     
-    function showNotification(message, type) {
-        type = type || 'info';
-        const n = document.createElement('div');
-        n.className = `notification ${type}`;
-        n.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i> ${message}`;
-        document.body.appendChild(n);
-        setTimeout(() => n.remove(), 3000);
-    }
-    
-    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
-    function saveUsers() { localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+    function saveData() { appStorage.setItem(STORAGE_KEY, JSON.stringify(appData)); }
+    function saveUsers() { appStorage.setItem(USERS_KEY, JSON.stringify(users)); }
     function isActiveMember(member) { return member.status === 'Serving' || member.status === 'Service Extended'; }
     
     function compressAndPreviewPassport(input) {
@@ -1042,9 +1125,25 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         const hasIllness = document.getElementById('regHasIllness').value;
         document.getElementById('illnessDetailsField').style.display = hasIllness === 'Yes' ? 'block' : 'none';
     }
+
+    function toggleServiceExtensionFields() {
+        const status = document.getElementById('regStatus')?.value;
+        const section = document.getElementById('serviceExtensionSection');
+        if (section) section.style.display = status === 'Service Extended' ? 'block' : 'none';
+    }
+
+    function getServiceExtensionData() {
+        const status = document.getElementById('regStatus')?.value;
+        const isExtended = status === 'Service Extended';
+        return {
+            extensionDuration: isExtended ? document.getElementById('regExtensionDuration').value : '',
+            extensionReason: isExtended ? document.getElementById('regExtensionReason').value : '',
+            newPopDate: isExtended ? document.getElementById('regNewPopDate').value : ''
+        };
+    }
     
     function loadData() {
-        const saved = localStorage.getItem(STORAGE_KEY);
+        const saved = appStorage.getItem(STORAGE_KEY);
         if (saved) { try { const parsed = JSON.parse(saved); appData = { ...appData, ...parsed }; } catch(e) {} }
         if (!appData.executivePositions || appData.executivePositions.length === 0) { appData.executivePositions = ['President', 'Vice President', 'Secretary', 'Treasurer', 'PRO']; saveData(); }
         if (!appData.groupExecutives) appData.groupExecutives = {};
@@ -1069,6 +1168,20 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
             appData.meetings = [{ id: 'mt1', meetingType: 'regular', venue: 'NYSC Secretariat', date: today, time: '09:00', description: 'Weekly CDS meeting', groups: [], customMembers: [], concluded: false }];
             saveData();
         }
+        appData.meetings.forEach(meeting => {
+            if (!meeting.submissions) meeting.submissions = {};
+            if (!meeting.groups) meeting.groups = [];
+            if (!meeting.batches) meeting.batches = [];
+            if (!meeting.customMembers) meeting.customMembers = [];
+        });
+        appData.corpsMembers.forEach(member => {
+            if (!member.status) member.status = 'Serving';
+            if (member.status !== 'Service Extended') {
+                member.extensionDuration = member.extensionDuration || '';
+                member.extensionReason = member.extensionReason || '';
+                member.newPopDate = member.newPopDate || '';
+            }
+        });
         updateGroupMemberCounts();
     }
     
@@ -1143,11 +1256,14 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     function getCustomSelectedMembers(isEdit = false) { return Array.from(isEdit ? editCustomSelectedMembers : customSelectedMembers); }
     
     function toggleMeetingFields() {
+        ensureMeetingAudienceExtensions();
         const type = document.getElementById('meetingTypeSelect').value;
         const specificField = document.getElementById('specificGroupsField');
         const customField = document.getElementById('customMembersField');
+        const batchField = document.getElementById('batchField');
         specificField.style.display = 'none';
         customField.style.display = 'none';
+        if (batchField) batchField.style.display = 'none';
         if (type === 'specific') {
             specificField.style.display = 'block';
             const container = document.getElementById('groupsCheckboxContainer');
@@ -1156,23 +1272,33 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
             customField.style.display = 'block';
             customSelectedMembers.clear();
             renderCustomMemberSelector('customMemberSearchContainer', customSelectedMembers, false);
+        } else if (type === 'batch') {
+            if (batchField) batchField.style.display = 'block';
+            renderBatchCheckboxes('batchesCheckboxContainer');
         }
     }
     
     function toggleEditMeetingFields() {
+        ensureMeetingAudienceExtensions();
         const type = document.getElementById('editMeetingTypeSelect').value;
         const specificField = document.getElementById('editSpecificGroupsField');
         const customField = document.getElementById('editCustomMembersField');
+        const batchField = document.getElementById('editBatchField');
+        const meeting = appData.meetings.find(m => m.id === pendingEditMeetingId);
         specificField.style.display = 'none';
         customField.style.display = 'none';
+        if (batchField) batchField.style.display = 'none';
         if (type === 'specific') {
             specificField.style.display = 'block';
             const container = document.getElementById('editGroupsCheckboxContainer');
-            container.innerHTML = appData.groups.map(g => `<div class="checkbox-item"><input type="checkbox" id="edit_group_${g.id}" value="${g.id}"><label for="edit_group_${g.id}">${escapeHtml(g.name)}</label></div>`).join('');
+            container.innerHTML = appData.groups.map(g => `<div class="checkbox-item"><input type="checkbox" id="edit_group_${g.id}" value="${g.id}" ${meeting?.groups?.includes(g.id) ? 'checked' : ''}><label for="edit_group_${g.id}">${escapeHtml(g.name)}</label></div>`).join('');
         } else if (type === 'custom') {
             customField.style.display = 'block';
-            editCustomSelectedMembers.clear();
+            if (!editCustomSelectedMembers.size && meeting?.customMembers) meeting.customMembers.forEach(mid => editCustomSelectedMembers.add(mid));
             renderCustomMemberSelector('editCustomMemberSearchContainer', editCustomSelectedMembers, true);
+        } else if (type === 'batch') {
+            if (batchField) batchField.style.display = 'block';
+            renderBatchCheckboxes('editBatchesCheckboxContainer', meeting?.batches || []);
         }
     }
     
@@ -1187,12 +1313,57 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         document.querySelectorAll('#editGroupsCheckboxContainer input[type="checkbox"]:checked').forEach(cb => selected.push(cb.value));
         return selected;
     }
+
+    function ensureMeetingAudienceExtensions() {
+        const meetingTypeSelect = document.getElementById('meetingTypeSelect');
+        const editMeetingTypeSelect = document.getElementById('editMeetingTypeSelect');
+        if (meetingTypeSelect && !meetingTypeSelect.querySelector('option[value="batch"]')) {
+            meetingTypeSelect.insertAdjacentHTML('beforeend', '<option value="batch">Selected Batch(es)</option>');
+        }
+        if (editMeetingTypeSelect && !editMeetingTypeSelect.querySelector('option[value="batch"]')) {
+            editMeetingTypeSelect.insertAdjacentHTML('beforeend', '<option value="batch">Selected Batch(es)</option>');
+        }
+        if (!document.getElementById('batchField')) {
+            document.getElementById('specificGroupsField')?.insertAdjacentHTML('afterend', '<div id="batchField" class="meeting-dynamic-section" style="display: none; grid-column: span 2;"><label class="form-label"><i class="fas fa-layer-group"></i> Select Batch(es) *</label><div><button type="button" class="btn btn-sm btn-secondary" onclick="toggleAllBatches()">Select All / None</button></div><div id="batchesCheckboxContainer" class="checkbox-group-container"></div></div>');
+        }
+        if (!document.getElementById('editBatchField')) {
+            document.getElementById('editSpecificGroupsField')?.insertAdjacentHTML('afterend', '<div id="editBatchField" class="meeting-dynamic-section" style="display: none; grid-column: span 2;"><label class="form-label"><i class="fas fa-layer-group"></i> Select Batch(es) *</label><div><button type="button" class="btn btn-sm btn-secondary" onclick="toggleEditAllBatches()">Select All / None</button></div><div id="editBatchesCheckboxContainer" class="checkbox-group-container"></div></div>');
+        }
+    }
+
+    function renderBatchCheckboxes(containerId, selectedBatches = []) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = (appData.batches || []).map(batch => {
+            const inputId = `${containerId}_${sanitizeFilename(batch)}`;
+            return `<div class="checkbox-item"><input type="checkbox" id="${inputId}" value="${escapeHtml(batch)}" ${selectedBatches.includes(batch) ? 'checked' : ''}><label for="${inputId}">${escapeHtml(batch)}</label></div>`;
+        }).join('');
+    }
+
+    function getSelectedBatchesFromCheckboxes(containerId = 'batchesCheckboxContainer') {
+        const selected = [];
+        document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`).forEach(cb => selected.push(cb.value));
+        return selected;
+    }
+
+    function toggleAllBatches() {
+        const checkboxes = document.querySelectorAll('#batchesCheckboxContainer input[type="checkbox"]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+    }
+
+    function toggleEditAllBatches() {
+        const checkboxes = document.querySelectorAll('#editBatchesCheckboxContainer input[type="checkbox"]');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkboxes.forEach(cb => cb.checked = !allChecked);
+    }
     
     function getMeetingNameFromType(type) {
         switch(type) {
             case 'regular': return 'Regular CDS Meeting';
             case 'central': return 'Central Executives Meeting';
             case 'specific': return 'Specific CDS Meeting';
+            case 'batch': return 'Selected Batch Meeting';
             case 'custom': return 'Custom Meeting';
             default: return 'Meeting';
         }
@@ -1214,6 +1385,9 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
             case 'specific':
                 if (!meeting.groups) return [];
                 return appData.corpsMembers.filter(m => meeting.groups.includes(m.groupId) && isActiveMember(m));
+            case 'batch':
+                if (!meeting.batches) return [];
+                return appData.corpsMembers.filter(m => meeting.batches.includes(m.batch) && isActiveMember(m));
             case 'custom':
                 if (!meeting.customMembers) return [];
                 return appData.corpsMembers.filter(m => meeting.customMembers.includes(m.id) && isActiveMember(m));
@@ -1222,9 +1396,17 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     }
     
     function getMeetingAudienceGroups(meeting) {
-        if (!meeting || meeting.meetingType !== 'specific') return [];
-        if (!meeting.groups) return [];
-        return appData.groups.filter(g => meeting.groups.includes(g.id));
+        if (!meeting) return [];
+        if (meeting.meetingType === 'specific') {
+            if (!meeting.groups) return [];
+            return appData.groups.filter(g => meeting.groups.includes(g.id));
+        }
+        if (meeting.meetingType === 'regular' || meeting.meetingType === 'batch') {
+            const members = getMeetingAudienceMembers(meeting);
+            const groupIds = new Set(members.map(member => member.groupId).filter(Boolean));
+            return appData.groups.filter(group => groupIds.has(group.id));
+        }
+        return [];
     }
     
     function renderDashboardCards() {
@@ -1379,7 +1561,34 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     
     function showConcludeModal(meetingId, meetingName) { pendingConcludeMeetingId = meetingId; document.getElementById('concludeMessage').innerHTML = `Are you sure you want to conclude "<strong>${escapeHtml(meetingName)}</strong>"?`; document.getElementById('concludeConfirmModal').classList.add('active'); }
     function closeConcludeModal() { pendingConcludeMeetingId = null; document.getElementById('concludeConfirmModal').classList.remove('active'); }
-    function confirmConcludeMeeting() { if (pendingConcludeMeetingId) { const meeting = appData.meetings.find(m => m.id === pendingConcludeMeetingId); if (meeting) { meeting.concluded = true; saveData(); renderMeetingsTable(); renderDashboardCards(); showNotification('Meeting concluded successfully', 'success'); } } closeConcludeModal(); }
+    function finalizeMeetingAttendance(meeting) {
+        if (!meeting || meeting.finalized) return;
+        const members = getMeetingAudienceMembers(meeting);
+        const records = appData.attendanceRecords.filter(r => r.meetingId === meeting.id);
+        let present = 0, absent = 0;
+        members.forEach(member => {
+            const record = records.find(r => r.memberId === member.id);
+            const status = record ? record.status : 'absent';
+            member.totalAttendanceEvents = (member.totalAttendanceEvents || 0) + 1;
+            if (status === 'present') {
+                member.attendanceCount = (member.attendanceCount || 0) + 1;
+                present++;
+            } else {
+                member.absenceCount = (member.absenceCount || 0) + 1;
+                absent++;
+            }
+        });
+        meeting.finalized = true;
+        meeting.concludedAt = new Date().toISOString();
+        meeting.finalStats = {
+            expected: members.length,
+            present,
+            absent,
+            attendanceRate: members.length ? Math.round((present / members.length) * 100) : 0
+        };
+    }
+    
+    function confirmConcludeMeeting() { if (pendingConcludeMeetingId) { const meeting = appData.meetings.find(m => m.id === pendingConcludeMeetingId); if (meeting) { finalizeMeetingAttendance(meeting); meeting.concluded = true; saveData(); renderMeetingsTable(); renderDashboardCards(); updateDashboardStats(); populateFilters(); showNotification('Meeting concluded successfully', 'success'); } } closeConcludeModal(); }
     
     function viewMeetingDetails(meetingId) {
         const meeting = appData.meetings.find(m => m.id === meetingId);
@@ -1392,6 +1601,9 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
                 const groupNames = meeting.groups.map(gid => { const group = appData.groups.find(g => g.id === gid); return group ? group.name : 'Unknown'; });
                 audienceHtml = groupNames.map(name => `<span class="audience-tag"><i class="fas fa-layer-group"></i> ${escapeHtml(name)}</span>`).join('');
                 break;
+            case 'batch':
+                audienceHtml = (meeting.batches || []).map(batch => `<span class="audience-tag"><i class="fas fa-layer-group"></i> ${escapeHtml(batch)}</span>`).join('');
+                break;
             case 'custom':
                 audienceHtml = `<span class="audience-tag"><i class="fas fa-user-check"></i> ${meeting.customMembers?.length || 0} Selected Member(s)</span>`;
                 break;
@@ -1402,7 +1614,7 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         const absentCount = records.filter(r => r.status === 'absent').length;
         const totalInvited = getMeetingAudienceMembers(meeting).length;
         const attendanceRate = totalInvited > 0 ? Math.round((presentCount / totalInvited) * 100) : 0;
-        document.getElementById('meetingDetailContent').innerHTML = `<div class="meeting-detail-clean"><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-tag"></i> Meeting Type</div><div class="meeting-detail-value">${escapeHtml(getMeetingNameFromType(meeting.meetingType))}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-map-marker-alt"></i> Venue</div><div class="meeting-detail-value">${escapeHtml(meeting.venue || 'Not specified')}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-calendar-day"></i> Date</div><div class="meeting-detail-value">${escapeHtml(meeting.date)}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-clock"></i> Time</div><div class="meeting-detail-value">${escapeHtml(meeting.time)}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-users"></i> Audience</div><div class="meeting-detail-value">${audienceHtml}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-chart-pie"></i> Attendance</div><div class="meeting-detail-value"><strong>${presentCount} Present</strong> / ${absentCount} Absent (${attendanceRate}% Rate)</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-flag-checkered"></i> Status</div><div class="meeting-detail-value"><span class="status-badge ${meeting.concluded ? 'status-passed' : 'status-serving'}">${meeting.concluded ? 'Concluded' : 'Pending'}</span></div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-align-left"></i> Description</div><div class="meeting-detail-value">${escapeHtml(meeting.description || 'No description')}</div></div></div>${!meeting.concluded ? `<button class="btn btn-info" onclick="navigateToAttendanceWithMeeting('${meeting.id}')"><i class="fas fa-clipboard-list"></i> Take Attendance</button>` : ''}`;
+        document.getElementById('meetingDetailContent').innerHTML = `<div class="meeting-detail-clean"><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-tag"></i> Meeting Type</div><div class="meeting-detail-value">${escapeHtml(getMeetingNameFromType(meeting.meetingType))}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-map-marker-alt"></i> Venue</div><div class="meeting-detail-value">${escapeHtml(meeting.venue || 'Not specified')}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-calendar-day"></i> Date</div><div class="meeting-detail-value">${escapeHtml(meeting.date)}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-clock"></i> Time</div><div class="meeting-detail-value">${escapeHtml(meeting.time)}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-users"></i> Audience</div><div class="meeting-detail-value">${audienceHtml}</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-chart-pie"></i> Attendance</div><div class="meeting-detail-value"><strong>${presentCount} Present</strong> / ${absentCount} Absent (${attendanceRate}% Rate)</div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-flag-checkered"></i> Status</div><div class="meeting-detail-value"><span class="status-badge ${meeting.concluded ? 'status-passed' : 'status-serving'}">${meeting.concluded ? 'Concluded' : 'Pending'}</span></div></div><div class="meeting-detail-row"><div class="meeting-detail-label"><i class="fas fa-align-left"></i> Description</div><div class="meeting-detail-value">${escapeHtml(meeting.description || 'No description')}</div></div></div>${!meeting.concluded ? `<button class="btn btn-info" onclick="navigateToAttendanceWithMeeting('${meeting.id}')"><i class="fas fa-user-check"></i> Verify Attendance</button>` : ''}`;
         document.getElementById('meetingDetailModal').classList.add('active');
     }
     
@@ -1414,7 +1626,7 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
             meetingSelect.value = meetingId;
             loadAttendanceRecords();
             const meeting = appData.meetings.find(m => m.id === meetingId);
-            if (meeting && !meeting.concluded) { setTimeout(() => { openTakeAttendanceModal(meetingId); }, 300); }
+            if (meeting && !meeting.concluded) { setTimeout(() => { openVerificationModal(meetingId); }, 300); }
             else if (meeting && meeting.concluded) showNotification('This meeting is already concluded, cannot take attendance', 'warning');
         }
     }
@@ -1472,13 +1684,332 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         openTakeAttendanceModal(meetingId);
     }
     
-    function closeTakeAttendanceModal() { document.getElementById('takeAttendanceModal').classList.remove('active'); currentAttendanceMeeting = null; attendanceTempRecords = {}; document.getElementById('attendanceSearchInput').value = ''; }
-    
-    // SHARE FUNCTIONALITY
-    function openShareModal(meetingId, groupId, groupName) {
+	    function closeTakeAttendanceModal() { document.getElementById('takeAttendanceModal').classList.remove('active'); currentAttendanceMeeting = null; attendanceTempRecords = {}; document.getElementById('attendanceSearchInput').value = ''; }
+
+	    function concludeCurrentMeetingFromAttendance() {
+	        const meetingId = document.getElementById('attendanceMeetingFilter').value;
+	        if (!meetingId) { showNotification('Please select a meeting first', 'error'); return; }
+	        const meeting = appData.meetings.find(m => m.id === meetingId);
+	        if (!meeting) { showNotification('Meeting not found', 'error'); return; }
+	        showConcludeModal(meeting.id, getMeetingNameFromType(meeting.meetingType));
+	    }
+
+	    function getVerificationGroups(meeting) {
+	        if (!meeting) return [];
+	        if (meeting.meetingType === 'regular' || meeting.meetingType === 'specific' || meeting.meetingType === 'batch') {
+	            return getMeetingAudienceGroups(meeting).map(group => ({
+	                id: group.id,
+	                name: group.name,
+	                members: getMeetingAudienceMembers(meeting).filter(member => member.groupId === group.id)
+	            })).filter(group => group.members.length);
+	        }
+	        return [{
+	            id: 'audience',
+	            name: getMeetingNameFromType(meeting.meetingType),
+	            members: getMeetingAudienceMembers(meeting)
+	        }];
+	    }
+
+	    function openVerificationModalForCurrentMeeting() {
+	        const meetingId = document.getElementById('attendanceMeetingFilter').value;
+	        if (!meetingId) { showNotification('Please select a meeting first', 'error'); return; }
+	        openVerificationModal(meetingId);
+	    }
+
+	    function openVerificationModal(meetingId, startGroupId = null) {
+	        const meeting = appData.meetings.find(m => m.id === meetingId);
+	        if (!meeting || meeting.concluded) { showNotification('This meeting cannot be verified', 'error'); return; }
+	        const groups = getVerificationGroups(meeting);
+	        if (!groups.length) { showNotification('No members found for this meeting audience', 'error'); return; }
+	        const records = {};
+	        getMeetingAudienceMembers(meeting).forEach(member => {
+	            const existingRecord = appData.attendanceRecords.find(record => record.meetingId === meeting.id && record.memberId === member.id);
+	            records[member.id] = existingRecord ? existingRecord.status : 'absent';
+	        });
+	        verificationState = {
+	            meeting,
+	            groups,
+	            groupId: startGroupId && groups.some(group => group.id === startGroupId) ? startGroupId : groups[0].id,
+	            memberIndex: 0,
+	            records,
+	            autoSpeak: document.getElementById('verificationAutoSpeak')?.checked !== false
+	        };
+	        document.getElementById('verificationModal').classList.add('active');
+	        renderVerificationModal();
+	    }
+
+	    function closeVerificationModal() {
+	        window.speechSynthesis?.cancel();
+	        document.getElementById('verificationModal').classList.remove('active');
+	        verificationState = { meeting: null, groups: [], groupId: null, memberIndex: 0, records: {}, autoSpeak: true };
+	    }
+
+	    function getCurrentVerificationGroup() {
+	        return verificationState.groups.find(group => group.id === verificationState.groupId) || verificationState.groups[0];
+	    }
+
+	    function renderVerificationModal() {
+	        const group = getCurrentVerificationGroup();
+	        const meeting = verificationState.meeting;
+	        if (!meeting || !group) return;
+	        if (verificationState.memberIndex >= group.members.length) verificationState.memberIndex = Math.max(0, group.members.length - 1);
+	        const allMembers = verificationState.groups.flatMap(item => item.members);
+	        const present = allMembers.filter(member => verificationState.records[member.id] === 'present').length;
+	        const absent = allMembers.filter(member => verificationState.records[member.id] === 'absent').length;
+	        document.getElementById('verificationSummary').innerHTML = `<div class="attendance-stat"><span>${escapeHtml(getMeetingNameFromType(meeting.meetingType))}</span> - ${escapeHtml(meeting.date)} | Expected: <span>${allMembers.length}</span> | Present: <span>${present}</span> | Absent: <span>${absent}</span></div>`;
+	        document.getElementById('verificationGroupList').innerHTML = verificationState.groups.map(item => {
+	            const itemPresent = item.members.filter(member => verificationState.records[member.id] === 'present').length;
+	            const submitted = meeting.submissions?.[item.id];
+	            return `<button class="verification-group-btn ${item.id === verificationState.groupId ? 'active' : ''}" onclick="setVerificationGroup('${item.id}')"><strong>${escapeHtml(item.name)}</strong><br><small>${itemPresent}/${item.members.length} present${submitted ? ` - ${escapeHtml(submitted.submittedBy || 'submitted')}` : ''}</small></button>`;
+	        }).join('');
+	        const member = group.members[verificationState.memberIndex];
+	        const status = verificationState.records[member.id] || 'absent';
+	        const statusClass = status === 'present' ? 'status-serving' : 'status-relocated';
+	        document.getElementById('verificationMemberPanel').innerHTML = `<div class="verification-member-card"><div class="counter">${verificationState.memberIndex + 1} of ${group.members.length} - ${escapeHtml(group.name)}</div><div class="verification-member-name">${escapeHtml(getMemberFullName(member))}</div><div><strong>${escapeHtml(member.stateCodeNumber || 'No state code')}</strong></div><div style="margin-top: 12px;"><span class="status-badge ${statusClass}">${status === 'present' ? 'Present' : 'Absent'}</span></div></div>`;
+	        if (verificationState.autoSpeak) speakCurrentVerificationMember();
+	    }
+
+	    function setVerificationGroup(groupId) {
+	        verificationState.groupId = groupId;
+	        verificationState.memberIndex = 0;
+	        renderVerificationModal();
+	    }
+
+	    function moveVerificationMember(delta) {
+	        const group = getCurrentVerificationGroup();
+	        if (!group) return;
+	        verificationState.memberIndex = Math.max(0, Math.min(group.members.length - 1, verificationState.memberIndex + delta));
+	        renderVerificationModal();
+	    }
+
+	    function markVerificationMember(status) {
+	        const group = getCurrentVerificationGroup();
+	        const member = group?.members[verificationState.memberIndex];
+	        if (!member) return;
+	        verificationState.records[member.id] = status;
+	        if (verificationState.memberIndex < group.members.length - 1) verificationState.memberIndex++;
+	        renderVerificationModal();
+	    }
+
+	    function skipVerificationMember() {
+	        moveVerificationMember(1);
+	    }
+
+	    function speakCurrentVerificationMember() {
+	        const group = getCurrentVerificationGroup();
+	        const member = group?.members[verificationState.memberIndex];
+	        if (!member || !window.speechSynthesis) return;
+	        window.speechSynthesis.cancel();
+	        const utterance = new SpeechSynthesisUtterance(getMemberFullName(member));
+	        utterance.rate = 0.92;
+	        window.speechSynthesis.speak(utterance);
+	    }
+
+	    function saveVerificationRecords() {
+	        const meeting = verificationState.meeting;
+	        if (!meeting) return;
+	        const now = new Date().toISOString();
+	        getMeetingAudienceMembers(meeting).forEach(member => {
+	            const existingIndex = appData.attendanceRecords.findIndex(record => record.meetingId === meeting.id && record.memberId === member.id);
+	            const record = {
+	                meetingId: meeting.id,
+	                memberId: member.id,
+	                status: verificationState.records[member.id] || 'absent',
+	                timestamp: now,
+	                markedBy: currentUser?.name || 'LGI Verification'
+	            };
+	            if (existingIndex >= 0) appData.attendanceRecords[existingIndex] = record;
+	            else appData.attendanceRecords.push(record);
+	        });
+	        meeting.verifiedAt = now;
+	        meeting.verifiedBy = currentUser?.name || 'LGI';
+	        saveData();
+	        loadAttendanceRecords();
+	        renderDashboardCards();
+	        showNotification('Verification saved', 'success');
+	    }
+
+	    function concludeVerificationMeeting() {
+	        const meeting = verificationState.meeting;
+	        if (!meeting) return;
+	        saveVerificationRecords();
+	        finalizeMeetingAttendance(meeting);
+	        meeting.concluded = true;
+	        saveData();
+	        renderMeetingsTable();
+	        renderDashboardCards();
+	        updateDashboardStats();
+	        populateFilters();
+	        closeVerificationModal();
+	        showNotification('Meeting verified and concluded', 'success');
+	    }
+	    
+	    function getMemberFullName(member) {
+	        return [member.surname, member.firstName, member.otherName].filter(Boolean).join(' ').trim();
+	    }
+	    
+	    function sanitizeFilename(value) {
+	        return String(value || 'file').replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '') || 'file';
+	    }
+	    
+	    function readJsonStorage(key) {
+	        try { return JSON.parse(appStorage.getItem(key) || '{}'); }
+	        catch(e) { return {}; }
+	    }
+	    
+	    function writeJsonStorage(key, value) {
+	        appStorage.setItem(key, JSON.stringify(value));
+	    }
+
+	    function getLocalSyncUrl() {
+	        try { return window.smartDeskApp?.getSyncServerUrl?.() || ''; }
+	        catch(e) { return ''; }
+	    }
+	    
+	    function downloadTextFile(filename, content, type) {
+	        const blob = new Blob([content], { type: type || 'application/json' });
+	        const a = document.createElement('a');
+	        a.href = URL.createObjectURL(blob);
+	        a.download = filename;
+	        a.click();
+	        URL.revokeObjectURL(blob);
+	    }
+	    
+	    function buildAttendancePackage(meeting, group, members, records) {
+	        const recordByMemberId = new Map(records.map(record => [record.memberId, record]));
+	        return {
+	            type: 'smart-desk-attendance-package',
+	            version: 1,
+	            generatedAt: new Date().toISOString(),
+	            source: 'Smart Desk LGI Desktop',
+	            meeting: {
+	                id: meeting.id,
+	                name: getMeetingNameFromType(meeting.meetingType),
+	                type: meeting.meetingType,
+	                date: meeting.date,
+	                time: meeting.time,
+	                venue: meeting.venue || '',
+	                description: meeting.description || ''
+	            },
+	            cdsGroup: {
+	                id: group.id,
+	                name: group.name
+	            },
+	            members: members.map(member => {
+	                const record = recordByMemberId.get(member.id);
+	                return {
+	                    id: member.id,
+	                    fullName: getMemberFullName(member),
+	                    surname: member.surname || '',
+	                    firstName: member.firstName || '',
+	                    otherName: member.otherName || '',
+	                    stateCodeNumber: member.stateCodeNumber || member.stateCode || '',
+	                    phone: member.phone || '',
+	                    batch: member.batch || '',
+	                    ppa: member.ppa || '',
+	                    memberStatus: member.status || 'Serving',
+	                    attendanceStatus: record ? record.status : ''
+	                };
+	            })
+	        };
+	    }
+	    
+	    function getCurrentSharePackage() {
+	        if (!currentShareData) return null;
+	        const group = appData.groups.find(g => g.id === currentShareData.groupId) || { id: currentShareData.groupId, name: currentShareData.groupName };
+	        return buildAttendancePackage(currentShareData.meeting, group, currentShareData.groupMembers, currentShareData.records);
+	    }
+	    
+	    function normalizeAttendanceStatus(status) {
+	        const normalized = String(status || '').trim().toLowerCase();
+	        return normalized === 'present' || normalized === 'p' || normalized === 'yes' ? 'present' : 'absent';
+	    }
+	    
+	    function findMemberForSubmittedRecord(record, groupId) {
+	        const stateCode = String(record.stateCodeNumber || record.stateCode || '').trim().toLowerCase();
+	        const fullName = String(record.fullName || record.memberName || record.name || '').trim().toLowerCase();
+	        return appData.corpsMembers.find(member => {
+	            if (member.groupId !== groupId || !isActiveMember(member)) return false;
+	            if (record.memberId && member.id === record.memberId) return true;
+	            if (stateCode && String(member.stateCodeNumber || member.stateCode || '').trim().toLowerCase() === stateCode) return true;
+	            return fullName && getMemberFullName(member).toLowerCase() === fullName;
+	        });
+	    }
+
+	    function getSubmissionSignature(result) {
+	        const records = Array.isArray(result.records) ? result.records : [];
+	        return JSON.stringify(records.map(record => ({
+	            memberId: record.memberId || '',
+	            stateCodeNumber: record.stateCodeNumber || record.stateCode || '',
+	            status: normalizeAttendanceStatus(record.status || record.attendanceStatus)
+	        })).sort((a, b) => `${a.memberId}${a.stateCodeNumber}`.localeCompare(`${b.memberId}${b.stateCodeNumber}`)));
+	    }
+	    
+	    function mergeAttendanceResult(result) {
+	        if (!currentReceiveData) return { ok: false, message: 'No receive session is active.' };
+	        const meetingId = result.meetingId || result.meeting?.id;
+	        const groupId = result.cdsGroupId || result.cdsGroup?.id;
+	        if (meetingId !== currentReceiveData.meetingId) return { ok: false, message: 'Attendance result does not match the selected meeting.' };
+	        if (groupId !== currentReceiveData.groupId) return { ok: false, message: 'Attendance result does not match the selected CDS group.' };
+	        if (!Array.isArray(result.records)) return { ok: false, message: 'Attendance result has no records.' };
+	        const meeting = appData.meetings.find(item => item.id === currentReceiveData.meetingId);
+	        if (!meeting) return { ok: false, message: 'Meeting was not found.' };
+	        if (!meeting.submissions) meeting.submissions = {};
+	        const signature = getSubmissionSignature(result);
+	        const existingSubmission = meeting.submissions[groupId];
+	        if (existingSubmission?.signature === signature) {
+	            return { ok: false, message: 'Duplicate submission detected. This CDS result has already been received.' };
+	        }
+	        let updatedCount = 0;
+	        result.records.forEach(record => {
+	            const member = findMemberForSubmittedRecord(record, currentReceiveData.groupId);
+	            if (!member) return;
+	            const existingIndex = appData.attendanceRecords.findIndex(r => r.meetingId === currentReceiveData.meetingId && r.memberId === member.id);
+	            const newRecord = {
+	                meetingId: currentReceiveData.meetingId,
+	                memberId: member.id,
+	                status: normalizeAttendanceStatus(record.status || record.attendanceStatus),
+	                timestamp: record.timestamp || result.generatedAt || new Date().toISOString(),
+	                markedBy: record.markedBy || result.submittedBy?.name || 'CDS Provost'
+	            };
+	            if (existingIndex >= 0) appData.attendanceRecords[existingIndex] = newRecord;
+	            else appData.attendanceRecords.push(newRecord);
+	            updatedCount++;
+	        });
+	        if (!updatedCount) return { ok: false, message: 'No matching members were found in this attendance result.' };
+	        meeting.submissions[groupId] = {
+	            submittedAt: result.generatedAt || new Date().toISOString(),
+	            receivedAt: new Date().toISOString(),
+	            submittedBy: result.submittedBy?.name || result.submittedBy?.username || 'CDS Provost',
+	            recordCount: updatedCount,
+	            signature,
+	            resubmission: Boolean(existingSubmission)
+	        };
+	        saveData();
+	        loadAttendanceRecords();
+	        return { ok: true, updatedCount, resubmission: Boolean(existingSubmission) };
+	    }
+	    
+	    function parseCsvLine(line) {
+	        const cells = [];
+	        let value = '', insideQuotes = false;
+	        for (let i = 0; i < line.length; i++) {
+	            const char = line[i];
+	            if (char === '"' && line[i + 1] === '"') { value += '"'; i++; }
+	            else if (char === '"') insideQuotes = !insideQuotes;
+	            else if (char === ',' && !insideQuotes) { cells.push(value); value = ''; }
+	            else value += char;
+	        }
+	        cells.push(value);
+	        return cells.map(cell => cell.trim());
+	    }
+	    
+	    // SHARE FUNCTIONALITY
+	    function openShareModal(meetingId, groupId, groupName) {
         const meeting = appData.meetings.find(m => m.id === meetingId);
         if (!meeting) return;
-        const groupMembers = appData.corpsMembers.filter(m => m.groupId === groupId && isActiveMember(m));
+        const audienceIds = new Set(getMeetingAudienceMembers(meeting).map(member => member.id));
+        const groupMembers = appData.corpsMembers.filter(m => m.groupId === groupId && isActiveMember(m) && audienceIds.has(m.id));
         const records = appData.attendanceRecords.filter(r => r.meetingId === meetingId && groupMembers.some(m => m.id === r.memberId));
         const presentCount = records.filter(r => r.status === 'present').length;
         const totalCount = groupMembers.length;
@@ -1496,39 +2027,49 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     
     function closeShareModal() { document.getElementById('shareModal').classList.remove('active'); currentShareData = null; }
     
-    function generatePairingCode() {
-        generatedPairingCode = Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-        document.getElementById('pairingCodeValue').textContent = generatedPairingCode;
-        document.getElementById('pairingCodeDisplay').style.display = 'block';
-        document.getElementById('pairingStatus').innerHTML = '<div class="pairing-card" style="background: #d4edda;"><i class="fas fa-check-circle"></i> Pairing code generated! Share this code with the CDS software.</div>';
-    }
+	    function generatePairingCode() {
+	        const attendancePackage = getCurrentSharePackage();
+	        if (!attendancePackage) { showNotification('No attendance package is ready to share', 'error'); return; }
+	        generatedPairingCode = Math.random().toString(36).substring(2, 10).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+	        const packages = readJsonStorage(PAIRING_PACKAGES_KEY);
+	        packages[generatedPairingCode] = { package: attendancePackage, createdAt: new Date().toISOString() };
+	        writeJsonStorage(PAIRING_PACKAGES_KEY, packages);
+	        document.getElementById('pairingCodeValue').textContent = generatedPairingCode;
+	        document.getElementById('pairingCodeDisplay').style.display = 'block';
+	        const syncUrl = getLocalSyncUrl();
+	        document.getElementById('pairingStatus').innerHTML = `<div class="pairing-card" style="background: #d4edda;"><i class="fas fa-check-circle"></i> Pairing package is ready. Share this code with the CDS app, or download the package for manual transfer.${syncUrl ? `<div class="sync-url-box"><strong>Local sync URL:</strong><br>${escapeHtml(syncUrl)}</div>` : ''}</div>`;
+	    }
     
     function copyPairingCode() { if (generatedPairingCode) { navigator.clipboard.writeText(generatedPairingCode); showNotification('Pairing code copied to clipboard!', 'success'); } }
     
-    function exportAttendanceForSharing() {
-        if (!currentShareData) return;
-        const meeting = currentShareData.meeting;
-        const csvData = [
-            [`Meeting:`, getMeetingNameFromType(meeting.meetingType) + ' - ' + meeting.date],
-            [`CDS Group:`, currentShareData.groupName],
-            [`Date:`, meeting.date],
-            [`Venue:`, meeting.venue || 'N/A'],
-            [],
-            [`Member Name`, `State Code`, `Status`, `Timestamp`]
-        ];
-        currentShareData.groupMembers.forEach(member => {
-            const record = currentShareData.records.find(r => r.memberId === member.id);
-            csvData.push([`${member.surname} ${member.firstName}`, member.stateCodeNumber || '', record ? record.status : 'absent', record ? new Date(record.timestamp).toLocaleString() : 'Not recorded']);
-        });
-        const csv = csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `attendance_${currentShareData.groupName}_${meeting.date}.csv`;
-        a.click();
-        URL.revokeObjectURL(blob);
-        showNotification('Attendance data exported for sharing', 'success');
-    }
+	    function exportAttendanceForSharing() {
+	        const attendancePackage = getCurrentSharePackage();
+	        if (!attendancePackage) return;
+	        const filename = `${sanitizeFilename(attendancePackage.meeting.name)}_${sanitizeFilename(attendancePackage.cdsGroup.name)}_${attendancePackage.meeting.date}_package.json`;
+	        downloadTextFile(filename, JSON.stringify(attendancePackage, null, 2), 'application/json');
+	        showNotification('Attendance package downloaded', 'success');
+	    }
+	    
+	    function exportAttendanceCsvForSharing() {
+	        const attendancePackage = getCurrentSharePackage();
+	        if (!attendancePackage) return;
+	        const headers = ['Meeting ID', 'Meeting Name', 'Date', 'Venue', 'CDS Group', 'Member ID', 'Member Name', 'State Code', 'Status'];
+	        const rows = attendancePackage.members.map(member => [
+	            attendancePackage.meeting.id,
+	            attendancePackage.meeting.name,
+	            attendancePackage.meeting.date,
+	            attendancePackage.meeting.venue || '',
+	            attendancePackage.cdsGroup.name,
+	            member.id,
+	            member.fullName,
+	            member.stateCodeNumber || '',
+	            member.attendanceStatus || ''
+	        ]);
+	        const csv = csvFromRows([headers, ...rows]);
+	        const filename = `${sanitizeFilename(attendancePackage.meeting.name)}_${sanitizeFilename(attendancePackage.cdsGroup.name)}_${attendancePackage.meeting.date}_attendance_sheet.csv`;
+	        downloadTextFile(filename, csv, 'text/csv');
+	        showNotification('Excel-compatible attendance sheet downloaded', 'success');
+	    }
     
     // RECEIVE FUNCTIONALITY
     function openReceiveModal(meetingId, groupId, groupName) {
@@ -1546,50 +2087,75 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     
     function enterPairingCodeForReceive() { const area = document.getElementById('pairingInputArea'); area.style.display = area.style.display === 'none' ? 'block' : 'none'; document.getElementById('pairingCodeInput').value = ''; }
     
-    function receiveViaPairingCode() {
-        const enteredCode = document.getElementById('pairingCodeInput').value.trim().toUpperCase();
-        if (!enteredCode) { showNotification('Please enter a pairing code', 'error'); return; }
-        document.getElementById('receiveStatus').innerHTML = '<div class="pairing-card" style="background: #cce5ff;"><i class="fas fa-sync-alt fa-spin"></i> Connecting to CDS software... Please ensure the other device has generated this code.</div>';
-        setTimeout(() => {
-            document.getElementById('receiveStatus').innerHTML = '<div class="pairing-card" style="background: #d4edda;"><i class="fas fa-check-circle"></i> Pairing successful! Attendance data has been synced from CDS software.</div>';
-            showNotification('Attendance data received via pairing!', 'success');
-            loadAttendanceRecords();
-        }, 2000);
-    }
+	    function receiveViaPairingCode() {
+	        const enteredCode = document.getElementById('pairingCodeInput').value.trim().toUpperCase();
+	        if (!enteredCode) { showNotification('Please enter a pairing code', 'error'); return; }
+	        const results = readJsonStorage(PAIRING_RESULTS_KEY);
+	        const pairedResult = results[enteredCode]?.result || results[enteredCode];
+	        if (!pairedResult) {
+	            document.getElementById('receiveStatus').innerHTML = '<div class="pairing-card" style="background: #fff3cd;"><i class="fas fa-exclamation-triangle"></i> No submitted attendance result found for this code yet.</div>';
+	            showNotification('No attendance result found for this code', 'warning');
+	            return;
+	        }
+	        const mergeResult = mergeAttendanceResult(pairedResult);
+	        if (!mergeResult.ok) {
+	            document.getElementById('receiveStatus').innerHTML = `<div class="pairing-card" style="background: #f8d7da;"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(mergeResult.message)}</div>`;
+	            showNotification(mergeResult.message, 'error');
+	            return;
+	        }
+	        delete results[enteredCode];
+	        writeJsonStorage(PAIRING_RESULTS_KEY, results);
+	        document.getElementById('receiveStatus').innerHTML = `<div class="pairing-card" style="background: #d4edda;"><i class="fas fa-check-circle"></i> Received ${mergeResult.updatedCount} attendance record(s) from CDS software.</div>`;
+	        showNotification('Attendance data received via pairing', 'success');
+	    }
     
     function manualUploadAttendance() { document.getElementById('attendanceUploadFile').click(); }
     
-    function processUploadedAttendance(input) {
-        const file = input.files[0];
-        if (!file || !currentReceiveData) return;
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const content = e.target.result;
-            const lines = content.split(/\r?\n/);
-            if (lines.length < 2) { showNotification('Invalid file format', 'error'); return; }
-            let updatedCount = 0;
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const parts = line.split(',');
-                if (parts.length < 3) continue;
-                const memberName = parts[0].replace(/^"|"$/g, '').toLowerCase();
-                const status = parts[2].replace(/^"|"$/g, '').toLowerCase();
-                const member = appData.corpsMembers.find(m => m.groupId === currentReceiveData.groupId && isActiveMember(m) && (m.surname.toLowerCase() + ' ' + m.firstName.toLowerCase()) === memberName);
-                if (member && currentReceiveData.meetingId) {
-                    const existingIndex = appData.attendanceRecords.findIndex(r => r.meetingId === currentReceiveData.meetingId && r.memberId === member.id);
-                    const newRecord = { meetingId: currentReceiveData.meetingId, memberId: member.id, status: status === 'present' ? 'present' : 'absent', timestamp: new Date().toISOString() };
-                    if (existingIndex >= 0) appData.attendanceRecords[existingIndex] = newRecord;
-                    else appData.attendanceRecords.push(newRecord);
-                    updatedCount++;
-                }
-            }
-            if (updatedCount > 0) { saveData(); loadAttendanceRecords(); showNotification(`Successfully updated ${updatedCount} attendance records from file`, 'success'); document.getElementById('receiveStatus').innerHTML = `<div class="pairing-card" style="background: #d4edda;"><i class="fas fa-check-circle"></i> Updated ${updatedCount} attendance records from uploaded file.</div>`; }
-            else { showNotification('No matching members found in the file', 'warning'); document.getElementById('receiveStatus').innerHTML = '<div class="pairing-card" style="background: #fff3cd;"><i class="fas fa-exclamation-triangle"></i> No matching records found. Check file format.</div>'; }
-        };
-        reader.readAsText(file);
-        input.value = '';
-    }
+	    function processUploadedAttendance(input) {
+	        const file = input.files[0];
+	        if (!file || !currentReceiveData) return;
+	        const reader = new FileReader();
+	        reader.onload = function(e) {
+	            const content = e.target.result;
+	            let resultData = null;
+	            try {
+	                resultData = JSON.parse(content);
+	            } catch(e) {
+	                const lines = content.split(/\r?\n/).filter(line => line.trim());
+	                const header = parseCsvLine(lines[0] || '').map(cell => cell.toLowerCase());
+	                const memberIdIndex = header.findIndex(cell => cell.includes('member id'));
+	                const stateCodeIndex = header.findIndex(cell => cell.includes('state code'));
+	                const nameIndex = header.findIndex(cell => cell.includes('name'));
+	                const statusIndex = header.findIndex(cell => cell.includes('status'));
+	                resultData = {
+	                    type: 'smart-desk-attendance-result',
+	                    version: 1,
+	                    generatedAt: new Date().toISOString(),
+	                    meetingId: currentReceiveData.meetingId,
+	                    cdsGroupId: currentReceiveData.groupId,
+	                    records: lines.slice(1).map(line => {
+	                        const cells = parseCsvLine(line);
+	                        return {
+	                            memberId: memberIdIndex >= 0 ? cells[memberIdIndex] : '',
+	                            stateCodeNumber: stateCodeIndex >= 0 ? cells[stateCodeIndex] : '',
+	                            fullName: nameIndex >= 0 ? cells[nameIndex] : '',
+	                            status: statusIndex >= 0 ? cells[statusIndex] : ''
+	                        };
+	                    })
+	                };
+	            }
+	            const mergeResult = mergeAttendanceResult(resultData);
+	            if (mergeResult.ok) {
+	                showNotification(`Successfully updated ${mergeResult.updatedCount} attendance records from file`, 'success');
+	                document.getElementById('receiveStatus').innerHTML = `<div class="pairing-card" style="background: #d4edda;"><i class="fas fa-check-circle"></i> Updated ${mergeResult.updatedCount} attendance records from uploaded file.</div>`;
+	            } else {
+	                showNotification(mergeResult.message, 'error');
+	                document.getElementById('receiveStatus').innerHTML = `<div class="pairing-card" style="background: #f8d7da;"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(mergeResult.message)}</div>`;
+	            }
+	        };
+	        reader.readAsText(file);
+	        input.value = '';
+	    }
     
     // LOAD ATTENDANCE RECORDS - WITH SHARE AND RECEIVE BUTTONS ONLY (NO TAKE BUTTON FOR GROUPS)
     function loadAttendanceRecords() {
@@ -1599,21 +2165,27 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         if (!meeting) { document.getElementById('attendanceTableBody').innerHTML = '<tr><td colspan="6" style="text-align:center">Meeting not found</td></tr>'; return; }
         const existingRecords = appData.attendanceRecords.filter(r => r.meetingId === meetingId);
         
-        if (meeting.meetingType === 'specific' || meeting.meetingType === 'regular') {
+        if (meeting.meetingType === 'specific' || meeting.meetingType === 'regular' || meeting.meetingType === 'batch') {
             let targetGroups = [];
             if (meeting.meetingType === 'specific') targetGroups = getMeetingAudienceGroups(meeting);
+            else if (meeting.meetingType === 'batch') targetGroups = getMeetingAudienceGroups(meeting);
             else targetGroups = appData.groups;
             const tbody = document.getElementById('attendanceTableBody');
             if (targetGroups.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No groups found for this meeting</td></tr>'; return; }
-            tbody.innerHTML = targetGroups.map(group => {
-                const groupMembers = appData.corpsMembers.filter(m => m.groupId === group.id && isActiveMember(m));
-                const presentCount = groupMembers.filter(m => existingRecords.some(r => r.memberId === m.id && r.status === 'present')).length;
-                const totalCount = groupMembers.length;
-                const statusText = totalCount > 0 ? `${presentCount}/${totalCount} marked` : 'No members';
-                const statusClass = totalCount > 0 ? (presentCount === totalCount ? 'status-serving' : 'status-warning') : 'status-relocated';
-                return `<tr><td><strong>${escapeHtml(group.name)}</strong><br><small>${totalCount} members</small></td><td>CDS Group</td><td>${escapeHtml(group.name)}</td><td><span class="status-badge ${statusClass}">${statusText}</span></td><td>${existingRecords.length > 0 ? new Date(existingRecords[0].timestamp).toLocaleString() : 'Not taken'}</td><td><button class="btn btn-sm btn-info" onclick="openShareModal('${meetingId}', '${group.id}', '${escapeHtml(group.name)}')"><i class="fas fa-share-alt"></i> Share</button> <button class="btn btn-sm btn-success" onclick="openReceiveModal('${meetingId}', '${group.id}', '${escapeHtml(group.name)}')"><i class="fas fa-cloud-download-alt"></i> Receive</button></td></tr>`;
-            }).join('');
-        } 
+	            const audienceIds = new Set(getMeetingAudienceMembers(meeting).map(member => member.id));
+	            tbody.innerHTML = targetGroups.map(group => {
+	                const groupMembers = appData.corpsMembers.filter(m => m.groupId === group.id && isActiveMember(m) && audienceIds.has(m.id));
+	                const groupRecords = existingRecords.filter(r => groupMembers.some(m => m.id === r.memberId));
+	                const presentCount = groupRecords.filter(r => r.status === 'present').length;
+	                const submittedCount = groupMembers.filter(m => groupRecords.some(r => r.memberId === m.id)).length;
+	                const totalCount = groupMembers.length;
+	                const submission = meeting.submissions?.[group.id];
+	                const statusText = totalCount > 0 ? (submittedCount === totalCount ? `Submitted (${presentCount}/${totalCount} present)` : `${submittedCount}/${totalCount} received`) : 'No members';
+	                const statusClass = totalCount > 0 ? (submittedCount === totalCount ? 'status-serving' : 'status-warning') : 'status-relocated';
+	                const latestRecord = groupRecords.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+	                return `<tr><td><strong>${escapeHtml(group.name)}</strong><br><small>${totalCount} members</small></td><td>CDS Group</td><td>${escapeHtml(group.name)}</td><td><span class="status-badge ${statusClass}">${statusText}</span>${submission ? `<br><small>By ${escapeHtml(submission.submittedBy || 'CDS Provost')}${submission.resubmission ? ' (resubmitted)' : ''}</small>` : ''}</td><td>${latestRecord ? new Date(latestRecord.timestamp).toLocaleString() : 'Not received'}</td><td><button class="btn btn-sm btn-info" onclick="openShareModal('${meetingId}', '${group.id}', '${escapeHtml(group.name)}')"><i class="fas fa-share-alt"></i> Share</button> <button class="btn btn-sm btn-success" onclick="openReceiveModal('${meetingId}', '${group.id}', '${escapeHtml(group.name)}')"><i class="fas fa-cloud-download-alt"></i> Receive</button> <button class="btn btn-sm btn-primary" onclick="openVerificationModal('${meetingId}', '${group.id}')"><i class="fas fa-user-check"></i> Verify</button></td></tr>`;
+	            }).join('');
+	        } 
         else if (meeting.meetingType === 'central') {
             const members = getMeetingAudienceMembers(meeting);
             const tbody = document.getElementById('attendanceTableBody');
@@ -1651,30 +2223,268 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         updateBatchDropdown();
     }
     
-    let reportHTML = '';
-    function generateReport() { /* simplified - same functionality */ showNotification('Report generation feature available', 'info'); }
-    function exportReport() { showNotification('Export feature available', 'info'); }
-    function saveOrganizationSettings() { appData.lgaName = document.getElementById('lgaName').value; appData.stateName = document.getElementById('stateName').value; appData.officeAddress = document.getElementById('officeAddress').value; appData.contactPhone = document.getElementById('contactPhone').value; appData.contactEmail = document.getElementById('contactEmail').value; saveData(); showNotification('Organization settings saved', 'success'); updateDashboardTitle(); }
-    function saveMandatoryOrganizationInfo() { const lga = document.getElementById('mandatoryLgaName').value.trim(); const state = document.getElementById('mandatoryStateName').value.trim(); if (!lga || !state) { showNotification('LGA Name and State are required', 'error'); return; } appData.lgaName = lga; appData.stateName = state; appData.officeAddress = document.getElementById('mandatoryOfficeAddress').value; appData.contactPhone = document.getElementById('mandatoryContactPhone').value; appData.contactEmail = document.getElementById('mandatoryContactEmail').value; saveData(); document.getElementById('orgInfoMandatoryModal').classList.remove('active'); updateDashboardTitle(); showNotification('Organization information saved', 'success'); document.getElementById('lgaName').value = appData.lgaName; document.getElementById('stateName').value = appData.stateName; document.getElementById('officeAddress').value = appData.officeAddress; document.getElementById('contactPhone').value = appData.contactPhone; document.getElementById('contactEmail').value = appData.contactEmail; }
+    let reportHTML = '', reportRows = [], reportFilename = 'smart_desk_report';
+    
+    function getMemberAttendanceStats(member) {
+        const concludedMeetings = appData.meetings.filter(meeting => meeting.concluded);
+        let expected = 0, present = 0, absent = 0;
+        concludedMeetings.forEach(meeting => {
+            const audience = getMeetingAudienceMembers(meeting);
+            if (!audience.some(audienceMember => audienceMember.id === member.id)) return;
+            expected++;
+            const record = appData.attendanceRecords.find(r => r.meetingId === meeting.id && r.memberId === member.id);
+            if (record && record.status === 'present') present++;
+            else absent++;
+        });
+        return { expected, present, absent, percentage: expected ? Math.round((present / expected) * 100) : 0 };
+    }
+    
+    function buildReportTable(headers, rows) {
+        if (!rows.length) return '<p style="color:var(--muted);">No records found for this report.</p>';
+        return `<table class="data-table"><thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead><tbody>${rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(String(cell ?? ''))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+    
+    function csvFromRows(rows) {
+        return rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    }
+    
+    function generateReport() {
+        const type = document.getElementById('reportType').value;
+        const meetingId = document.getElementById('reportMeeting').value;
+        const preview = document.getElementById('reportPreview');
+        let title = '', headers = [], rows = [];
+        if (type === 'attendance') {
+            const selectedMeeting = appData.meetings.find(m => m.id === meetingId);
+            if (selectedMeeting) {
+                title = `${getMeetingNameFromType(selectedMeeting.meetingType)} Attendance`;
+                headers = ['Member Name', 'State Code', 'CDS Group', 'Status', 'Timestamp'];
+                rows = getMeetingAudienceMembers(selectedMeeting).map(member => {
+                    const group = appData.groups.find(g => g.id === member.groupId);
+                    const record = appData.attendanceRecords.find(r => r.meetingId === selectedMeeting.id && r.memberId === member.id);
+                    return [getMemberFullName(member), member.stateCodeNumber || '', group?.name || '', record?.status || 'absent', record?.timestamp ? new Date(record.timestamp).toLocaleString() : 'Not recorded'];
+                });
+            } else {
+                title = 'Attendance Summary';
+                headers = ['Meeting', 'Date', 'Expected', 'Present', 'Absent', 'Rate'];
+                rows = appData.meetings.map(meeting => {
+                    const audience = getMeetingAudienceMembers(meeting);
+                    const records = appData.attendanceRecords.filter(r => r.meetingId === meeting.id);
+                    const present = audience.filter(member => records.some(r => r.memberId === member.id && r.status === 'present')).length;
+                    const absent = Math.max(audience.length - present, 0);
+                    return [getMeetingNameFromType(meeting.meetingType), meeting.date, audience.length, present, absent, `${audience.length ? Math.round((present / audience.length) * 100) : 0}%`];
+                });
+            }
+        } else if (type === 'eventSummary') {
+            const meetings = meetingId ? appData.meetings.filter(m => m.id === meetingId) : appData.meetings.filter(m => m.concluded);
+            title = meetingId ? `${getMeetingNameFromType(meetings[0]?.meetingType)} Event Summary` : 'Concluded Event Summary';
+            headers = ['Meeting', 'Date', 'CDS Group', 'Expected', 'Present', 'Absent', 'Rate', 'Status'];
+            meetings.forEach(meeting => {
+                const groups = getVerificationGroups(meeting);
+                if (!groups.length) {
+                    const audience = getMeetingAudienceMembers(meeting);
+                    const records = appData.attendanceRecords.filter(r => r.meetingId === meeting.id);
+                    const present = audience.filter(member => records.some(r => r.memberId === member.id && r.status === 'present')).length;
+                    const absent = Math.max(audience.length - present, 0);
+                    rows.push([getMeetingNameFromType(meeting.meetingType), meeting.date, 'All', audience.length, present, absent, `${audience.length ? Math.round((present / audience.length) * 100) : 0}%`, meeting.concluded ? 'Concluded' : 'Open']);
+                    return;
+                }
+                groups.forEach(group => {
+                    const records = appData.attendanceRecords.filter(r => r.meetingId === meeting.id && group.members.some(member => member.id === r.memberId));
+                    const present = group.members.filter(member => records.some(r => r.memberId === member.id && r.status === 'present')).length;
+                    const absent = Math.max(group.members.length - present, 0);
+                    rows.push([getMeetingNameFromType(meeting.meetingType), meeting.date, group.name, group.members.length, present, absent, `${group.members.length ? Math.round((present / group.members.length) * 100) : 0}%`, meeting.concluded ? 'Concluded' : 'Open']);
+                });
+            });
+        } else if (type === 'members') {
+            title = 'Corps Members Report';
+            headers = ['Surname', 'First Name', 'State Code', 'CDS Group', 'Batch', 'Status', 'Attendance %'];
+            rows = appData.corpsMembers.map(member => {
+                const group = appData.groups.find(g => g.id === member.groupId);
+                const stats = getMemberAttendanceStats(member);
+                return [member.surname || '', member.firstName || '', member.stateCodeNumber || '', group?.name || 'Not assigned', member.batch || '', member.status || 'Serving', stats.expected ? `${stats.percentage}%` : 'N/A'];
+            });
+        } else if (type === 'groups') {
+            title = 'CDS Groups Report';
+            headers = ['Group Name', 'Group ID', 'President', 'Serving Members'];
+            rows = appData.groups.map(group => [group.name, group.id, group.president || 'Not assigned', appData.corpsMembers.filter(member => member.groupId === group.id && isActiveMember(member)).length]);
+        } else if (type === 'defaulters') {
+            title = 'Defaulters Report';
+            headers = ['Member Name', 'State Code', 'CDS Group', 'Expected', 'Present', 'Absent', 'Attendance %'];
+            rows = appData.corpsMembers.map(member => {
+                const stats = getMemberAttendanceStats(member);
+                const group = appData.groups.find(g => g.id === member.groupId);
+                return { member, stats, group };
+            }).filter(item => item.stats.expected > 0 && item.stats.percentage < 75).map(item => [getMemberFullName(item.member), item.member.stateCodeNumber || '', item.group?.name || 'Not assigned', item.stats.expected, item.stats.present, item.stats.absent, `${item.stats.percentage}%`]);
+        }
+        reportRows = [headers, ...rows];
+        reportFilename = sanitizeFilename(title || 'smart_desk_report');
+        reportHTML = `<h3 style="color:var(--primary); margin-bottom:10px;">${escapeHtml(title)}</h3><p style="color:var(--muted); margin-bottom:12px;">Generated ${new Date().toLocaleString()}</p>${buildReportTable(headers, rows)}`;
+        preview.innerHTML = reportHTML;
+        showNotification('Report generated', 'success');
+    }
+    
+    function exportReport() {
+        if (!reportRows.length) generateReport();
+        const format = document.getElementById('reportFormat').value;
+        if (format === 'csv') {
+            downloadTextFile(`${reportFilename}_${new Date().toISOString().split('T')[0]}.csv`, csvFromRows(reportRows), 'text/csv');
+            showNotification('Report exported as CSV', 'success');
+            return;
+        }
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`<html><head><title>${reportFilename}</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background:#004E2B;color:white;}h3{color:#004E2B;}</style></head><body>${reportHTML}</body></html>`);
+        printWindow.document.close();
+        printWindow.print();
+        showNotification('Report opened for printing', 'success');
+    }
+    
+    function saveOrganizationSettings() { const state = document.getElementById('stateName').value.trim(); if (state && !isValidNigerianState(state)) { showNotification('Please select a valid Nigerian state or FCT', 'error'); return; } appData.lgaName = document.getElementById('lgaName').value; appData.stateName = state; appData.officeAddress = document.getElementById('officeAddress').value; appData.contactPhone = document.getElementById('contactPhone').value; appData.contactEmail = document.getElementById('contactEmail').value; saveData(); showNotification('Organization settings saved', 'success'); updateDashboardTitle(); }
+    function saveMandatoryOrganizationInfo() { const lga = document.getElementById('mandatoryLgaName').value.trim(); const state = document.getElementById('mandatoryStateName').value.trim(); if (!lga || !state) { showNotification('LGA Name and State are required', 'error'); return; } if (!isValidNigerianState(state)) { showNotification('Please select a valid Nigerian state or FCT', 'error'); return; } appData.lgaName = lga; appData.stateName = state; appData.officeAddress = document.getElementById('mandatoryOfficeAddress').value; appData.contactPhone = document.getElementById('mandatoryContactPhone').value; appData.contactEmail = document.getElementById('mandatoryContactEmail').value; saveData(); document.getElementById('orgInfoMandatoryModal').classList.remove('active'); updateDashboardTitle(); showNotification('Organization information saved', 'success'); document.getElementById('lgaName').value = appData.lgaName; document.getElementById('stateName').value = appData.stateName; document.getElementById('officeAddress').value = appData.officeAddress; document.getElementById('contactPhone').value = appData.contactPhone; document.getElementById('contactEmail').value = appData.contactEmail; }
     function updateDashboardTitle() { const titleElem = document.getElementById('pageTitle'); if (titleElem && appData.lgaName && appData.lgaName.trim() !== '') titleElem.textContent = appData.lgaName; else if (titleElem) titleElem.textContent = 'Dashboard'; }
     function checkOrganizationInfoAndShowModal() { if (!appData.lgaName || appData.lgaName.trim() === '') document.getElementById('orgInfoMandatoryModal').classList.add('active'); else updateDashboardTitle(); }
     function changePasswordFromSettings() { const current = document.getElementById('currentPasswordSetting').value; const newPass = document.getElementById('newPasswordSetting').value; const confirmPass = document.getElementById('confirmPasswordSetting').value; if (!current || !newPass || !confirmPass) { showNotification('Fill all password fields', 'error'); return; } if (users[currentUser.username].password !== current) { showNotification('Current password incorrect', 'error'); return; } if (newPass !== confirmPass) { showNotification('New passwords do not match', 'error'); return; } if (newPass.length < 6) { showNotification('Password must be at least 6 characters', 'error'); return; } users[currentUser.username].password = newPass; saveUsers(); document.getElementById('currentPasswordSetting').value = ''; document.getElementById('newPasswordSetting').value = ''; document.getElementById('confirmPasswordSetting').value = ''; showNotification('Password changed successfully', 'success'); }
     function exportAllData() { const blob = new Blob([JSON.stringify({ appData, users }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `smart_desk_backup_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(blob); showNotification('Backup exported', 'success'); }
     function importAllData() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json'; input.onchange = e => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = ev => { try { const imported = JSON.parse(ev.target.result); if (imported.appData) appData = { ...appData, ...imported.appData }; if (imported.users) users = imported.users; saveData(); saveUsers(); location.reload(); showNotification('Data imported', 'success'); } catch(err) { showNotification('Invalid backup file', 'error'); } }; reader.readAsText(file); }; input.click(); }
-    function processImport() { const file = document.getElementById('importFile').files[0]; if (!file) { showNotification('Select a file to import', 'error'); return; } const reader = new FileReader(); reader.onload = ev => { const text = ev.target.result, lines = text.split(/\r?\n/); let imported = 0; for (let i = 1; i < lines.length; i++) { if (!lines[i].trim()) continue; const vals = lines[i].split(','); if (vals.length < 5) continue; const groupName = vals[4]?.trim(); let groupId = appData.groups.find(g => g.name === groupName)?.id; if (!groupId && groupName) { groupId = generateGroupId(); appData.groups.push({ id: groupId, name: groupName, president: 'Not assigned', memberCount: 0 }); } appData.corpsMembers.push({ id: Date.now() + '_' + i, surname: vals[0]?.trim() || '', firstName: vals[1]?.trim() || '', otherName: '', stateCodeNumber: vals[2]?.trim() || '', phone: vals[3]?.trim() || '', groupId: groupId || '', batch: vals[5]?.trim() || '', ppa: vals[6]?.trim() || '', status: vals[7]?.trim() || 'Serving', attendanceCount: 0, regDate: new Date().toISOString() }); imported++; } updateGroupMemberCounts(); saveData(); renderCorpsTable(); updateDashboardStats(); populateFilters(); renderDashboardCards(); closeImportModal(); showNotification(`Imported ${imported} corps members`, 'success'); }; reader.readAsText(file); }
+    function normalizeImportHeader(value) {
+        return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+    }
+
+    function parseDelimitedRows(text) {
+        const lines = String(text || '').split(/\r?\n/).filter(line => line.trim());
+        if (!lines.length) return [];
+        const delimiter = lines[0].includes('\t') && !lines[0].includes(',') ? '\t' : ',';
+        return lines.map(line => delimiter === ',' ? parseCsvLine(line) : line.split('\t').map(cell => cell.trim()));
+    }
+
+    function getImportCell(row, headers, aliases) {
+        const normalizedAliases = aliases.map(normalizeImportHeader);
+        const index = headers.findIndex(header => normalizedAliases.includes(header));
+        return index >= 0 ? String(row[index] || '').trim() : '';
+    }
+
+    function splitImportedName(fullName) {
+        const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
+        if (parts.length <= 1) return { surname: parts[0] || '', firstName: '' };
+        return { surname: parts[0], firstName: parts.slice(1).join(' ') };
+    }
+
+    function findOrCreateGroupByName(groupName) {
+        const cleanName = String(groupName || '').trim();
+        if (!cleanName) return '';
+        let group = appData.groups.find(existing => existing.name.toLowerCase() === cleanName.toLowerCase());
+        if (!group) {
+            group = { id: generateGroupId(), name: cleanName, president: 'Not assigned', memberCount: 0 };
+            appData.groups.push(group);
+        }
+        return group.id;
+    }
+
+    function normalizeMemberStatus(status) {
+        const clean = String(status || 'Serving').trim().toLowerCase();
+        const known = {
+            serving: 'Serving',
+            'serviceextended': 'Service Extended',
+            'extended': 'Service Extended',
+            passedout: 'Passed Out',
+            pop: 'Passed Out',
+            relocated: 'Relocated',
+            absconded: 'Absconded'
+        };
+        return known[normalizeImportHeader(clean)] || 'Serving';
+    }
+
+    async function readRowsFromImportFile(file) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (['xlsx', 'xls'].includes(extension)) {
+            if (!window.readXlsxFile) throw new Error('Excel parser is not available.');
+            return (await window.readXlsxFile(file)).filter(row => row.some(cell => String(cell ?? '').trim()));
+        }
+        if (extension === 'docx') {
+            if (!window.mammoth) throw new Error('Word parser is not available.');
+            const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+            return parseDelimitedRows(result.value);
+        }
+        return parseDelimitedRows(await file.text());
+    }
+
+    function buildMembersFromImportRows(rows) {
+        if (!rows.length) return { members: [], skipped: 0, groupsCreated: 0 };
+        const headers = rows[0].map(normalizeImportHeader);
+        const existingStateCodes = new Set(appData.corpsMembers.map(member => String(member.stateCodeNumber || member.stateCode || '').trim().toLowerCase()).filter(Boolean));
+        const groupCountBefore = appData.groups.length;
+        const members = [];
+        let skipped = 0;
+        rows.slice(1).forEach((row, index) => {
+            if (!row.some(cell => String(cell).trim())) return;
+            const fullName = getImportCell(row, headers, ['full name', 'name', 'member name']);
+            const nameParts = splitImportedName(fullName);
+            const surname = getImportCell(row, headers, ['surname', 'last name']) || nameParts.surname;
+            const firstName = getImportCell(row, headers, ['first name', 'firstname', 'given name']) || nameParts.firstName;
+            const stateCodeNumber = getImportCell(row, headers, ['state code', 'state code number', 'statecode', 'statecodenumber']);
+            if (!surname || !stateCodeNumber) { skipped++; return; }
+            const normalizedStateCode = stateCodeNumber.toLowerCase();
+            if (existingStateCodes.has(normalizedStateCode)) { skipped++; return; }
+            existingStateCodes.add(normalizedStateCode);
+            const groupId = findOrCreateGroupByName(getImportCell(row, headers, ['cds group', 'cdsgroup', 'group']));
+            const batch = getImportCell(row, headers, ['batch', 'stream']);
+            members.push({
+                id: `import_${Date.now()}_${index}`,
+                surname,
+                firstName,
+                otherName: getImportCell(row, headers, ['other name', 'othername', 'middle name']),
+                stateCodeNumber,
+                phone: getImportCell(row, headers, ['phone', 'phone number', 'mobile']),
+                email: getImportCell(row, headers, ['email', 'email address']),
+                sex: getImportCell(row, headers, ['sex', 'gender']),
+                groupId,
+                batch,
+                ppa: getImportCell(row, headers, ['ppa', 'place of primary assignment']),
+                status: normalizeMemberStatus(getImportCell(row, headers, ['status'])),
+                attendanceCount: 0,
+                regDate: new Date().toISOString()
+            });
+        });
+        return { members, skipped, groupsCreated: appData.groups.length - groupCountBefore };
+    }
+
+    async function processImport() {
+        const file = document.getElementById('importFile').files[0];
+        const preview = document.getElementById('importPreview');
+        if (!file) { showNotification('Select a file to import', 'error'); return; }
+        try {
+            const rows = await readRowsFromImportFile(file);
+            const result = buildMembersFromImportRows(rows);
+            preview.innerHTML = `<div class="notice info"><strong>Preview:</strong> ${result.members.length} member(s) ready, ${result.groupsCreated} new group(s), ${result.skipped} skipped.</div>`;
+            if (!result.members.length) { showNotification('No importable members were found', 'warning'); return; }
+            if (!window.confirm(`Import ${result.members.length} member(s)?\nNew CDS groups: ${result.groupsCreated}\nSkipped rows/duplicates: ${result.skipped}`)) return;
+            appData.corpsMembers.push(...result.members);
+            updateGroupMemberCounts();
+            saveData();
+            renderCorpsTable();
+            renderGroupsTable();
+            updateDashboardStats();
+            populateFilters();
+            renderDashboardCards();
+            closeImportModal();
+            showNotification(`Imported ${result.members.length} corps members`, 'success');
+        } catch(error) {
+            preview.innerHTML = `<div class="notice error">${escapeHtml(error.message || 'Import failed')}</div>`;
+            showNotification(error.message || 'Import failed', 'error');
+        }
+    }
     
-    function openRegisterModal() { document.getElementById('registerModal').classList.add('active'); toggleIllnessField(); }
-    function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); document.getElementById('registerForm').reset(); passportDataUrl = null; document.getElementById('passportPreview').classList.remove('active'); const btn = document.querySelector('#registerModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Register Member'; btn.onclick = registerCorpsMember; } window.editingMemberId = null; }
+    function openRegisterModal() { document.getElementById('registerModal').classList.add('active'); toggleIllnessField(); toggleServiceExtensionFields(); }
+    function closeRegisterModal() { document.getElementById('registerModal').classList.remove('active'); document.getElementById('registerForm').reset(); passportDataUrl = null; document.getElementById('passportPreview').classList.remove('active'); toggleServiceExtensionFields(); const btn = document.querySelector('#registerModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Register Member'; btn.onclick = registerCorpsMember; } window.editingMemberId = null; }
     function openGroupModal() { document.getElementById('groupModal').classList.add('active'); }
     function closeGroupModal() { document.getElementById('groupModal').classList.remove('active'); document.getElementById('groupName').value = ''; const btn = document.querySelector('#groupModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Create Group'; btn.onclick = createGroup; } }
-    function openMeetingModal() { document.getElementById('meetingTypeSelect').value = ''; document.getElementById('specificGroupsField').style.display = 'none'; document.getElementById('customMembersField').style.display = 'none'; document.getElementById('meetingVenue').value = ''; document.getElementById('meetingDate').value = ''; document.getElementById('meetingTime').value = ''; document.getElementById('meetingDesc').value = ''; customSelectedMembers.clear(); document.getElementById('meetingModal').classList.add('active'); }
+    function openMeetingModal() { ensureMeetingAudienceExtensions(); document.getElementById('meetingTypeSelect').value = ''; document.getElementById('specificGroupsField').style.display = 'none'; document.getElementById('customMembersField').style.display = 'none'; if (document.getElementById('batchField')) document.getElementById('batchField').style.display = 'none'; document.getElementById('meetingVenue').value = ''; document.getElementById('meetingDate').value = ''; document.getElementById('meetingTime').value = ''; document.getElementById('meetingDesc').value = ''; customSelectedMembers.clear(); document.getElementById('meetingModal').classList.add('active'); }
     function closeMeetingModal() { document.getElementById('meetingModal').classList.remove('active'); }
     function openImportModal() { document.getElementById('importModal').classList.add('active'); }
-    function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+    function closeImportModal() { document.getElementById('importModal').classList.remove('active'); const importFile = document.getElementById('importFile'); if (importFile) importFile.value = ''; const preview = document.getElementById('importPreview'); if (preview) preview.innerHTML = ''; }
     
-    function saveSession() { localStorage.setItem(SESSION_KEY, JSON.stringify({ user: currentUser, timestamp: Date.now() })); }
-    function loadSession() { const saved = localStorage.getItem(SESSION_KEY); if (saved) { try { const session = JSON.parse(saved); if (session.user && users[session.user.username] && users[session.user.username].password === session.user.password) { currentUser = session.user; return true; } } catch(e) {} } return false; }
-    function clearSession() { localStorage.removeItem(SESSION_KEY); }
+    function saveSession() { appStorage.setItem(SESSION_KEY, JSON.stringify({ user: currentUser, timestamp: Date.now() })); }
+    function loadSession() { const saved = appStorage.getItem(SESSION_KEY); if (saved) { try { const session = JSON.parse(saved); if (session.user && users[session.user.username] && users[session.user.username].password === session.user.password) { currentUser = session.user; return true; } } catch(e) {} } return false; }
+    function clearSession() { appStorage.removeItem(SESSION_KEY); }
     
     function login() { const u = document.getElementById('loginUsername').value.toLowerCase(), p = document.getElementById('loginPassword').value; if (users[u] && users[u].password === p) { currentUser = { username: u, role: users[u].role, name: users[u].name, password: p }; saveSession(); document.getElementById('sidebarUserName').textContent = currentUser.name; document.getElementById('sidebarUserRole').textContent = currentUser.role; document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appContainer').classList.remove('hidden'); document.getElementById('loadingSpinner').classList.add('hidden'); loadData(); renderCorpsTable(); renderGroupsTable(); renderMeetingsTable(); renderBatches(); renderExecutivePositions(); renderDashboardCards(); updateDashboardStats(); populateFilters(); initYearDropdown(); loadOrganizationSettings(); checkOrganizationInfoAndShowModal(); showNotification(`Welcome, ${currentUser.name}!`, 'success'); } else { showNotification('Invalid credentials', 'error'); } }
     
@@ -1687,7 +2497,7 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     function exportTableToPDF(pageType, title) { let content = ''; if (pageType === 'corps') { const table = document.getElementById('corpsTable'); if (table) content = table.outerHTML; } else if (pageType === 'groups') { const table = document.getElementById('groupsTable'); if (table) content = table.outerHTML; } else if (pageType === 'meetings') { const table = document.getElementById('meetingsTable'); if (table) content = table.outerHTML; } else if (pageType === 'attendance') { const table = document.getElementById('attendanceTable'); if (table) content = table.outerHTML; } if (!content) { showNotification('No data to export', 'error'); return; } const printWindow = window.open('', '_blank'); printWindow.document.write(`<html><head><title>${title}</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:20px;}table{border-collapse:collapse;width:100%;}th,td{border:1px solid #ddd;padding:8px;text-align:left;}th{background-color:#004E2B;color:white;}h1{color:#004E2B;}</style></head><body><h1>${title}</h1><p>Generated: ${new Date().toLocaleString()}</p>${content}</body></html>`); printWindow.document.close(); printWindow.print(); showNotification('PDF export initiated', 'success'); }
     function exportAttendanceToExcel() { exportTableToExcel('attendanceTableBody', 'Attendance_Records'); }
     function exportAttendanceToPDF() { exportTableToPDF('attendance', 'Attendance Records'); }
-    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, m => m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'); }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char])); }
     
     function navigateToPage(pageId) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); const element = document.getElementById(`page${pageId.charAt(0).toUpperCase() + pageId.slice(1)}`); if (element) element.classList.add('active'); document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`); if (navItem) navItem.classList.add('active'); const titles = { dashboard: appData.lgaName && appData.lgaName.trim() !== '' ? appData.lgaName : 'Dashboard', corps: 'Corps Members', groups: 'CDS Groups', meetings: 'Meetings', attendance: 'Attendance', reports: 'Reports', settings: 'Settings' }; document.getElementById('pageTitle').textContent = titles[pageId] || 'Dashboard'; if (pageId === 'corps') renderCorpsTable(); if (pageId === 'groups') renderGroupsTable(); if (pageId === 'meetings') renderMeetingsTable(); if (pageId === 'attendance') populateFilters(); if (pageId === 'dashboard') renderDashboardCards(); }
     
@@ -1701,12 +2511,32 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     document.getElementById('corpsBatchFilter')?.addEventListener('change', renderCorpsTable);
     document.getElementById('groupsSearch')?.addEventListener('input', renderGroupsTable);
     document.getElementById('meetingsSearch')?.addEventListener('input', renderMeetingsTable);
-    document.getElementById('attendanceSearchInput')?.addEventListener('input', renderAttendanceMemberList);
-    document.getElementById('attendanceGroupFilter')?.addEventListener('change', renderAttendanceMemberList);
-    
-    function loadOrganizationSettings() { document.getElementById('lgaName').value = appData.lgaName || ''; document.getElementById('stateName').value = appData.stateName || ''; document.getElementById('officeAddress').value = appData.officeAddress || ''; document.getElementById('contactPhone').value = appData.contactPhone || ''; document.getElementById('contactEmail').value = appData.contactEmail || ''; }
-    
-    if (loadSession()) { setTimeout(() => { currentUser = JSON.parse(localStorage.getItem(SESSION_KEY)).user; document.getElementById('sidebarUserName').textContent = currentUser.name; document.getElementById('sidebarUserRole').textContent = currentUser.role; document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appContainer').classList.remove('hidden'); loadData(); renderCorpsTable(); renderGroupsTable(); renderMeetingsTable(); renderBatches(); renderExecutivePositions(); renderDashboardCards(); updateDashboardStats(); populateFilters(); initYearDropdown(); loadOrganizationSettings(); checkOrganizationInfoAndShowModal(); document.getElementById('loadingSpinner').classList.add('hidden'); }, 100); } else { setTimeout(() => { document.getElementById('loadingSpinner').classList.add('hidden'); }, 500); }
+	    document.getElementById('attendanceSearchInput')?.addEventListener('input', renderAttendanceMemberList);
+	    document.getElementById('attendanceGroupFilter')?.addEventListener('change', renderAttendanceMemberList);
+	    
+	    function tuneAttendanceTransferLabels() {
+	        const shareExportButton = document.querySelector('#shareModal button[onclick="exportAttendanceForSharing()"]');
+	        if (shareExportButton) shareExportButton.innerHTML = '<i class="fas fa-file-download"></i> Download Package';
+	        if (shareExportButton && !document.getElementById('shareCsvButton')) {
+	            const csvButton = document.createElement('button');
+	            csvButton.id = 'shareCsvButton';
+	            csvButton.className = 'btn btn-secondary';
+	            csvButton.setAttribute('onclick', 'exportAttendanceCsvForSharing()');
+	            csvButton.innerHTML = '<i class="fas fa-file-excel"></i> Download Excel CSV';
+	            shareExportButton.insertAdjacentElement('afterend', csvButton);
+	        }
+	        const uploadButton = document.querySelector('#receiveModal button[onclick="manualUploadAttendance()"]');
+	        if (uploadButton) uploadButton.innerHTML = '<i class="fas fa-upload"></i> Upload Attendance Result';
+	        const uploadInput = document.getElementById('attendanceUploadFile');
+	        if (uploadInput) uploadInput.accept = '.json,.csv';
+	    }
+	    
+	    function loadOrganizationSettings() { document.getElementById('lgaName').value = appData.lgaName || ''; document.getElementById('stateName').value = appData.stateName || ''; document.getElementById('officeAddress').value = appData.officeAddress || ''; document.getElementById('contactPhone').value = appData.contactPhone || ''; document.getElementById('contactEmail').value = appData.contactEmail || ''; }
+	    
+	    initNigeriaStateFields();
+	    ensureMeetingAudienceExtensions();
+	    tuneAttendanceTransferLabels();
+	    if (loadSession()) { setTimeout(() => { currentUser = JSON.parse(appStorage.getItem(SESSION_KEY)).user; document.getElementById('sidebarUserName').textContent = currentUser.name; document.getElementById('sidebarUserRole').textContent = currentUser.role; document.getElementById('loginScreen').classList.add('hidden'); document.getElementById('appContainer').classList.remove('hidden'); loadData(); renderCorpsTable(); renderGroupsTable(); renderMeetingsTable(); renderBatches(); renderExecutivePositions(); renderDashboardCards(); updateDashboardStats(); populateFilters(); initYearDropdown(); loadOrganizationSettings(); checkOrganizationInfoAndShowModal(); document.getElementById('loadingSpinner').classList.add('hidden'); }, 100); } else { setTimeout(() => { document.getElementById('loadingSpinner').classList.add('hidden'); }, 500); }
     
     function renderCorpsTable() {
         const search = (document.getElementById('corpsSearch')?.value || '').toLowerCase();
@@ -1744,7 +2574,7 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         const tbody = document.getElementById('meetingsTableBody');
         if (!tbody) return;
         if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">No meetings created</td></tr>'; return; }
-        tbody.innerHTML = filtered.map(m => { let audienceText = ''; switch(m.meetingType) { case 'regular': audienceText = 'All Corps Members'; break; case 'central': audienceText = 'Central Executives'; break; case 'specific': audienceText = `${m.groups?.length || 0} CDS Group(s)`; break; case 'custom': audienceText = `${m.customMembers?.length || 0} Selected Member(s)`; break; default: audienceText = 'All Members'; } return `<tr><td>${escapeHtml(getMeetingNameFromType(m.meetingType))}</td><td>${escapeHtml(m.meetingType)}</td><td>${escapeHtml(m.date)}</td><td>${escapeHtml(m.time)}</td><td>${audienceText}</td><td><span class="status-badge ${m.concluded ? 'status-passed' : 'status-serving'}">${m.concluded ? 'Concluded' : 'Pending'}</span></td><td><button class="btn btn-sm btn-info" onclick="viewMeetingDetails('${m.id}')"><i class="fas fa-eye"></i></button> ${!m.concluded ? `<button class="btn btn-sm btn-primary" onclick="openEditMeetingModal('${m.id}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-warning" onclick="showConcludeModal('${m.id}', '${escapeHtml(getMeetingNameFromType(m.meetingType))}')"><i class="fas fa-check"></i></button>` : ''} <button class="btn btn-sm btn-danger" onclick="showDeleteMeetingModal('${m.id}', '${escapeHtml(getMeetingNameFromType(m.meetingType))}')"><i class="fas fa-trash"></i></button></td></tr>`; }).join('');
+        tbody.innerHTML = filtered.map(m => { let audienceText = ''; switch(m.meetingType) { case 'regular': audienceText = 'All Corps Members'; break; case 'central': audienceText = 'Central Executives'; break; case 'specific': audienceText = `${m.groups?.length || 0} CDS Group(s)`; break; case 'batch': audienceText = `${m.batches?.length || 0} Batch(es)`; break; case 'custom': audienceText = `${m.customMembers?.length || 0} Selected Member(s)`; break; default: audienceText = 'All Members'; } return `<tr><td>${escapeHtml(getMeetingNameFromType(m.meetingType))}</td><td>${escapeHtml(m.meetingType)}</td><td>${escapeHtml(m.date)}</td><td>${escapeHtml(m.time)}</td><td>${audienceText}</td><td><span class="status-badge ${m.concluded ? 'status-passed' : 'status-serving'}">${m.concluded ? 'Concluded' : 'Pending'}</span></td><td><button class="btn btn-sm btn-info" onclick="viewMeetingDetails('${m.id}')"><i class="fas fa-eye"></i></button> ${!m.concluded ? `<button class="btn btn-sm btn-primary" onclick="openEditMeetingModal('${m.id}')"><i class="fas fa-edit"></i></button> <button class="btn btn-sm btn-warning" onclick="showConcludeModal('${m.id}', '${escapeHtml(getMeetingNameFromType(m.meetingType))}')"><i class="fas fa-check"></i></button>` : ''} <button class="btn btn-sm btn-danger" onclick="showDeleteMeetingModal('${m.id}', '${escapeHtml(getMeetingNameFromType(m.meetingType))}')"><i class="fas fa-trash"></i></button></td></tr>`; }).join('');
     }
     
     function createGroup() { const name = document.getElementById('groupName').value; if (!name) { showNotification('Please enter group name', 'error'); return; } appData.groups.push({ id: generateGroupId(), name: name, president: 'Not assigned', memberCount: 0 }); saveData(); renderGroupsTable(); populateFilters(); renderDashboardCards(); closeGroupModal(); showNotification('CDS Group created successfully', 'success'); }
@@ -1758,14 +2588,19 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         const time = document.getElementById('meetingTime').value;
         const description = document.getElementById('meetingDesc').value;
         if (!meetingType || !date || !time) { showNotification('Please fill all required fields', 'error'); return; }
-        let groups = [], customMembers = [];
+        let groups = [], customMembers = [], batches = [];
         if (meetingType === 'specific') groups = getSelectedGroupsFromCheckboxes();
+        else if (meetingType === 'batch') batches = getSelectedBatchesFromCheckboxes();
         else if (meetingType === 'custom') customMembers = getCustomSelectedMembers(false);
-        appData.meetings.push({ id: 'mt_' + Date.now(), meetingType: meetingType, venue: venue, date: date, time: time, description: description, groups: groups, customMembers: customMembers, concluded: false });
+        if (meetingType === 'specific' && groups.length === 0) { showNotification('Please select at least one CDS group', 'error'); return; }
+        if (meetingType === 'batch' && batches.length === 0) { showNotification('Please select at least one batch', 'error'); return; }
+        if (meetingType === 'custom' && customMembers.length === 0) { showNotification('Please select at least one member', 'error'); return; }
+        appData.meetings.push({ id: 'mt_' + Date.now(), meetingType: meetingType, venue: venue, date: date, time: time, description: description, groups: groups, batches: batches, customMembers: customMembers, submissions: {}, concluded: false });
         saveData(); renderMeetingsTable(); populateFilters(); renderDashboardCards(); closeMeetingModal(); showNotification('Meeting created successfully', 'success');
     }
     
     function openEditMeetingModal(meetingId) {
+        ensureMeetingAudienceExtensions();
         const meeting = appData.meetings.find(m => m.id === meetingId);
         if (!meeting) return;
         pendingEditMeetingId = meetingId;
@@ -1779,6 +2614,7 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
             const container = document.getElementById('editGroupsCheckboxContainer');
             container.innerHTML = appData.groups.map(g => `<div class="checkbox-item"><input type="checkbox" id="edit_group_${g.id}" value="${g.id}" ${meeting.groups?.includes(g.id) ? 'checked' : ''}><label for="edit_group_${g.id}">${escapeHtml(g.name)}</label></div>`).join('');
         } else if (meeting.meetingType === 'custom') { if (meeting.customMembers) meeting.customMembers.forEach(mid => editCustomSelectedMembers.add(mid)); }
+        else if (meeting.meetingType === 'batch') { renderBatchCheckboxes('editBatchesCheckboxContainer', meeting.batches || []); }
         toggleEditMeetingFields();
         document.getElementById('editMeetingModal').classList.add('active');
     }
@@ -1790,10 +2626,14 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
         const meeting = appData.meetings.find(m => m.id === pendingEditMeetingId);
         if (!meeting) return;
         const meetingType = document.getElementById('editMeetingTypeSelect').value;
-        let groups = [], customMembers = [];
+        let groups = [], customMembers = [], batches = [];
         if (meetingType === 'specific') groups = getEditSelectedGroupsFromCheckboxes();
+        else if (meetingType === 'batch') batches = getSelectedBatchesFromCheckboxes('editBatchesCheckboxContainer');
         else if (meetingType === 'custom') customMembers = getCustomSelectedMembers(true);
-        meeting.meetingType = meetingType; meeting.venue = document.getElementById('editMeetingVenue').value; meeting.date = document.getElementById('editMeetingDate').value; meeting.time = document.getElementById('editMeetingTime').value; meeting.description = document.getElementById('editMeetingDesc').value; meeting.groups = groups; meeting.customMembers = customMembers;
+        if (meetingType === 'specific' && groups.length === 0) { showNotification('Please select at least one CDS group', 'error'); return; }
+        if (meetingType === 'batch' && batches.length === 0) { showNotification('Please select at least one batch', 'error'); return; }
+        if (meetingType === 'custom' && customMembers.length === 0) { showNotification('Please select at least one member', 'error'); return; }
+        meeting.meetingType = meetingType; meeting.venue = document.getElementById('editMeetingVenue').value; meeting.date = document.getElementById('editMeetingDate').value; meeting.time = document.getElementById('editMeetingTime').value; meeting.description = document.getElementById('editMeetingDesc').value; meeting.groups = groups; meeting.batches = batches; meeting.customMembers = customMembers;
         saveData(); renderMeetingsTable(); renderDashboardCards(); closeEditMeetingModal(); showNotification('Meeting updated successfully', 'success');
     }
     
@@ -1810,7 +2650,7 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
             bankName: document.getElementById('regBankName').value, accountNumber: document.getElementById('regAccountNumber').value, accountName: document.getElementById('regAccountName').value,
             callupNumber: document.getElementById('regCallupNumber').value, permanentAddress: document.getElementById('regPermanentAddress').value, course: document.getElementById('regCourse').value,
             institution: document.getElementById('regInstitution').value, qualification: document.getElementById('regQualification').value, grade: document.getElementById('regGrade').value,
-            groupId: document.getElementById('regGroup').value, batch: document.getElementById('regBatch').value, ppa: document.getElementById('regPpa').value, status: document.getElementById('regStatus').value,
+            groupId: document.getElementById('regGroup').value, batch: document.getElementById('regBatch').value, ppa: document.getElementById('regPpa').value, status: document.getElementById('regStatus').value, ...getServiceExtensionData(),
             hasIllness: document.getElementById('regHasIllness').value, illnessDetails: document.getElementById('regHasIllness').value === 'Yes' ? document.getElementById('regIllnessDetails').value : '',
             nextOfKinName: document.getElementById('regNextOfKinName').value, nextOfKinPhone: document.getElementById('regNextOfKinPhone').value,
             emergencyName: document.getElementById('regEmergencyName').value, emergencyAddress: document.getElementById('regEmergencyAddress').value, emergencyPhone: document.getElementById('regEmergencyPhone').value,
@@ -1824,9 +2664,9 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     function closeDeleteMemberModal() { pendingDeleteMemberId = null; document.getElementById('deleteMemberConfirmModal').classList.remove('active'); }
     function confirmDeleteMember() { if (pendingDeleteMemberId) { const id = pendingDeleteMemberId; appData.corpsMembers = appData.corpsMembers.filter(m => m.id !== id); if (appData.groupExecutives) { for (const groupId in appData.groupExecutives) { for (const [pos, mid] of Object.entries(appData.groupExecutives[groupId])) { if (mid === id) delete appData.groupExecutives[groupId][pos]; } } } updateGroupMemberCounts(); saveData(); renderCorpsTable(); renderGroupsTable(); renderDashboardCards(); updateDashboardStats(); showNotification('Corps member deleted successfully', 'success'); } closeDeleteMemberModal(); }
     
-    function editCorpsMember(id) { const m = appData.corpsMembers.find(m => m.id === id); if (!m) return; document.getElementById('regFileNumber').value = m.fileNumber || ''; document.getElementById('regStateCodeNumber').value = m.stateCodeNumber || ''; document.getElementById('regSurname').value = m.surname; document.getElementById('regFirstName').value = m.firstName; document.getElementById('regOtherName').value = m.otherName || ''; document.getElementById('regMaidenName').value = m.maidenName || ''; document.getElementById('regDob').value = m.dob || ''; document.getElementById('regSex').value = m.sex || ''; document.getElementById('regMaritalStatus').value = m.maritalStatus || ''; document.getElementById('regPhone').value = m.phone || ''; document.getElementById('regEmail').value = m.email || ''; document.getElementById('regBankName').value = m.bankName || ''; document.getElementById('regAccountNumber').value = m.accountNumber || ''; document.getElementById('regAccountName').value = m.accountName || ''; document.getElementById('regCallupNumber').value = m.callupNumber || ''; document.getElementById('regPermanentAddress').value = m.permanentAddress || ''; document.getElementById('regCourse').value = m.course || ''; document.getElementById('regInstitution').value = m.institution || ''; document.getElementById('regQualification').value = m.qualification || ''; document.getElementById('regGrade').value = m.grade || ''; document.getElementById('regGroup').value = m.groupId; document.getElementById('regBatch').value = m.batch || ''; document.getElementById('regPpa').value = m.ppa || ''; document.getElementById('regStatus').value = m.status || 'Serving'; document.getElementById('regHasIllness').value = m.hasIllness || 'No'; toggleIllnessField(); document.getElementById('regIllnessDetails').value = m.illnessDetails || ''; document.getElementById('regNextOfKinName').value = m.nextOfKinName || ''; document.getElementById('regNextOfKinPhone').value = m.nextOfKinPhone || ''; document.getElementById('regEmergencyName').value = m.emergencyName || ''; document.getElementById('regEmergencyAddress').value = m.emergencyAddress || ''; document.getElementById('regEmergencyPhone').value = m.emergencyPhone || ''; if (m.passport) { document.getElementById('passportPreview').src = m.passport; document.getElementById('passportPreview').classList.add('active'); passportDataUrl = m.passport; } window.editingMemberId = id; openRegisterModal(); const btn = document.querySelector('#registerModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Update Member'; btn.onclick = () => updateCorpsMember(id); } }
+    function editCorpsMember(id) { const m = appData.corpsMembers.find(m => m.id === id); if (!m) return; document.getElementById('regFileNumber').value = m.fileNumber || ''; document.getElementById('regStateCodeNumber').value = m.stateCodeNumber || ''; document.getElementById('regSurname').value = m.surname; document.getElementById('regFirstName').value = m.firstName; document.getElementById('regOtherName').value = m.otherName || ''; document.getElementById('regMaidenName').value = m.maidenName || ''; document.getElementById('regDob').value = m.dob || ''; document.getElementById('regSex').value = m.sex || ''; document.getElementById('regMaritalStatus').value = m.maritalStatus || ''; document.getElementById('regPhone').value = m.phone || ''; document.getElementById('regEmail').value = m.email || ''; document.getElementById('regBankName').value = m.bankName || ''; document.getElementById('regAccountNumber').value = m.accountNumber || ''; document.getElementById('regAccountName').value = m.accountName || ''; document.getElementById('regCallupNumber').value = m.callupNumber || ''; document.getElementById('regPermanentAddress').value = m.permanentAddress || ''; document.getElementById('regCourse').value = m.course || ''; document.getElementById('regInstitution').value = m.institution || ''; document.getElementById('regQualification').value = m.qualification || ''; document.getElementById('regGrade').value = m.grade || ''; document.getElementById('regGroup').value = m.groupId; document.getElementById('regBatch').value = m.batch || ''; document.getElementById('regPpa').value = m.ppa || ''; document.getElementById('regStatus').value = m.status || 'Serving'; document.getElementById('regExtensionDuration').value = m.extensionDuration || ''; document.getElementById('regExtensionReason').value = m.extensionReason || ''; document.getElementById('regNewPopDate').value = m.newPopDate || ''; toggleServiceExtensionFields(); document.getElementById('regHasIllness').value = m.hasIllness || 'No'; toggleIllnessField(); document.getElementById('regIllnessDetails').value = m.illnessDetails || ''; document.getElementById('regNextOfKinName').value = m.nextOfKinName || ''; document.getElementById('regNextOfKinPhone').value = m.nextOfKinPhone || ''; document.getElementById('regEmergencyName').value = m.emergencyName || ''; document.getElementById('regEmergencyAddress').value = m.emergencyAddress || ''; document.getElementById('regEmergencyPhone').value = m.emergencyPhone || ''; if (m.passport) { document.getElementById('passportPreview').src = m.passport; document.getElementById('passportPreview').classList.add('active'); passportDataUrl = m.passport; } window.editingMemberId = id; openRegisterModal(); const btn = document.querySelector('#registerModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Update Member'; btn.onclick = () => updateCorpsMember(id); } }
     
-    function updateCorpsMember(id) { const idx = appData.corpsMembers.findIndex(m => m.id === id); if (idx === -1) return; appData.corpsMembers[idx] = { ...appData.corpsMembers[idx], passport: passportDataUrl || appData.corpsMembers[idx].passport, fileNumber: document.getElementById('regFileNumber').value, stateCodeNumber: document.getElementById('regStateCodeNumber').value, surname: document.getElementById('regSurname').value, firstName: document.getElementById('regFirstName').value, otherName: document.getElementById('regOtherName').value, maidenName: document.getElementById('regMaidenName').value, dob: document.getElementById('regDob').value, sex: document.getElementById('regSex').value, maritalStatus: document.getElementById('regMaritalStatus').value, phone: document.getElementById('regPhone').value, email: document.getElementById('regEmail').value, bankName: document.getElementById('regBankName').value, accountNumber: document.getElementById('regAccountNumber').value, accountName: document.getElementById('regAccountName').value, callupNumber: document.getElementById('regCallupNumber').value, permanentAddress: document.getElementById('regPermanentAddress').value, course: document.getElementById('regCourse').value, institution: document.getElementById('regInstitution').value, qualification: document.getElementById('regQualification').value, grade: document.getElementById('regGrade').value, groupId: document.getElementById('regGroup').value, batch: document.getElementById('regBatch').value, ppa: document.getElementById('regPpa').value, status: document.getElementById('regStatus').value, hasIllness: document.getElementById('regHasIllness').value, illnessDetails: document.getElementById('regHasIllness').value === 'Yes' ? document.getElementById('regIllnessDetails').value : '', nextOfKinName: document.getElementById('regNextOfKinName').value, nextOfKinPhone: document.getElementById('regNextOfKinPhone').value, emergencyName: document.getElementById('regEmergencyName').value, emergencyAddress: document.getElementById('regEmergencyAddress').value, emergencyPhone: document.getElementById('regEmergencyPhone').value }; updateGroupMemberCounts(); saveData(); renderCorpsTable(); updateDashboardStats(); renderDashboardCards(); closeRegisterModal(); showNotification('Corps member updated successfully', 'success'); const btn = document.querySelector('#registerModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Register Member'; btn.onclick = registerCorpsMember; } window.editingMemberId = null; passportDataUrl = null; }
+    function updateCorpsMember(id) { const idx = appData.corpsMembers.findIndex(m => m.id === id); if (idx === -1) return; appData.corpsMembers[idx] = { ...appData.corpsMembers[idx], passport: passportDataUrl || appData.corpsMembers[idx].passport, fileNumber: document.getElementById('regFileNumber').value, stateCodeNumber: document.getElementById('regStateCodeNumber').value, surname: document.getElementById('regSurname').value, firstName: document.getElementById('regFirstName').value, otherName: document.getElementById('regOtherName').value, maidenName: document.getElementById('regMaidenName').value, dob: document.getElementById('regDob').value, sex: document.getElementById('regSex').value, maritalStatus: document.getElementById('regMaritalStatus').value, phone: document.getElementById('regPhone').value, email: document.getElementById('regEmail').value, bankName: document.getElementById('regBankName').value, accountNumber: document.getElementById('regAccountNumber').value, accountName: document.getElementById('regAccountName').value, callupNumber: document.getElementById('regCallupNumber').value, permanentAddress: document.getElementById('regPermanentAddress').value, course: document.getElementById('regCourse').value, institution: document.getElementById('regInstitution').value, qualification: document.getElementById('regQualification').value, grade: document.getElementById('regGrade').value, groupId: document.getElementById('regGroup').value, batch: document.getElementById('regBatch').value, ppa: document.getElementById('regPpa').value, status: document.getElementById('regStatus').value, ...getServiceExtensionData(), hasIllness: document.getElementById('regHasIllness').value, illnessDetails: document.getElementById('regHasIllness').value === 'Yes' ? document.getElementById('regIllnessDetails').value : '', nextOfKinName: document.getElementById('regNextOfKinName').value, nextOfKinPhone: document.getElementById('regNextOfKinPhone').value, emergencyName: document.getElementById('regEmergencyName').value, emergencyAddress: document.getElementById('regEmergencyAddress').value, emergencyPhone: document.getElementById('regEmergencyPhone').value }; updateGroupMemberCounts(); saveData(); renderCorpsTable(); updateDashboardStats(); renderDashboardCards(); closeRegisterModal(); showNotification('Corps member updated successfully', 'success'); const btn = document.querySelector('#registerModal .modal-footer .btn-primary'); if (btn) { btn.textContent = 'Register Member'; btn.onclick = registerCorpsMember; } window.editingMemberId = null; passportDataUrl = null; }
     
     function viewGroupDetails(groupId) { const group = appData.groups.find(g => g.id === groupId); if (!group) return; const members = appData.corpsMembers.filter(m => m.groupId === groupId && isActiveMember(m)); const executives = appData.groupExecutives[groupId] || {}; const president = executives.President ? appData.corpsMembers.find(m => m.id === executives.President && isActiveMember(m)) : null; let executiveCount = 0; for (const member of members) { let hasExecutivePosition = false; for (const [pos, mid] of Object.entries(executives)) if (mid === member.id) { hasExecutivePosition = true; break; } if (hasExecutivePosition) executiveCount++; } document.getElementById('groupDetailTitle').innerHTML = `<i class="fas fa-users"></i> ${escapeHtml(group.name)} - Group Details`; let membersHtml = ''; if (members.length === 0) membersHtml = '<p style="color: var(--muted); text-align: center;">No active members in this group yet.</p>'; else { membersHtml = `<div class="member-list"><table class="data-table"><thead><th>Surname</th><th>First Name</th><th>State Code</th><th>Executive Position</th><th>Actions</th></thead><tbody>`; membersHtml += members.map(m => { let execPosition = ''; for (const [pos, mid] of Object.entries(executives)) if (mid === m.id) execPosition = pos; return `<tr><td>${escapeHtml(m.surname)}</td><td>${escapeHtml(m.firstName)}</td><td>${escapeHtml(m.stateCodeNumber || 'N/A')}</td><td>${execPosition ? `<span class="executive-badge">${escapeHtml(execPosition)}</span>` : '—'}</td><td><button class="btn btn-sm btn-info" onclick="viewMemberDetails('${m.id}')"><i class="fas fa-eye"></i></button> <select class="form-control" style="width:160px; display:inline-block; margin-left:5px; padding:4px;" onchange="assignExecutiveFromDetail('${groupId}', '${m.id}', this.value)"><option value="">-- Assign Role --</option>${appData.executivePositions.map(p => `<option value="${escapeHtml(p)}" ${execPosition === p ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('')}</select> <button class="btn btn-sm btn-danger" onclick="removeMemberFromGroup('${groupId}', '${m.id}')"><i class="fas fa-trash"></i></button></td></tr>`; }).join(''); membersHtml += '</tbody></div>'; } document.getElementById('groupDetailContent').innerHTML = `<div class="group-stats"><div class="group-stat-card"><div class="group-stat-number">${members.length}</div><div class="group-stat-label">Serving Members</div></div><div class="group-stat-card"><div class="group-stat-number">${group.memberCount}</div><div class="group-stat-label">Total Members</div></div><div class="group-stat-card"><div class="group-stat-number">${executiveCount}</div><div class="group-stat-label">Executives</div></div></div><div style="margin-bottom:20px;"><h4 class="form-label">President Details</h4>${president ? `<div class="member-item"><div><strong>${escapeHtml(president.surname)} ${escapeHtml(president.firstName)}</strong><br><small>${escapeHtml(president.stateCodeNumber || '')}</small></div><div><button class="btn btn-sm btn-info" onclick="viewMemberDetails('${president.id}')"><i class="fas fa-eye"></i></button> <button class="btn btn-sm btn-warning" onclick="removeExecutiveFromGroup('${groupId}', 'President')"><i class="fas fa-trash"></i> Remove</button></div></div>` : `<p style="color: var(--warning);">No president assigned to this group yet.</p>`}</div><h4 class="form-label">All Active Members</h4>${membersHtml}`; document.getElementById('groupDetailModal').classList.add('active'); }
     
@@ -1847,6 +2687,13 @@ Doe,John,NYSC/2025/001,1234567890,DL4ALL CDS,Batch A 2025 Stream 1,School A,Serv
     function viewMemberDetails(memberId) { const m = appData.corpsMembers.find(m => m.id === memberId); if (!m) return; currentViewingMember = m; const group = appData.groups.find(g => g.id === m.groupId); const executivePositions = []; for (const groupId in appData.groupExecutives) { for (const [pos, mid] of Object.entries(appData.groupExecutives[groupId])) { if (mid === memberId) { const execGroup = appData.groups.find(g => g.id === groupId); executivePositions.push(`${pos} of ${execGroup?.name || 'Unknown Group'}`); } } } const executiveText = executivePositions.length > 0 ? executivePositions.join(', ') : 'No executive position'; const parentsAlive = []; if (m.fatherAlive) parentsAlive.push('Father'); if (m.motherAlive) parentsAlive.push('Mother'); document.getElementById('memberDetailContent').innerHTML = `<div class="profile-header">${m.passport ? `<img src="${m.passport}" class="profile-avatar" alt="Passport">` : `<div class="profile-avatar-placeholder"><i class="fas fa-user-circle fa-4x"></i></div>`}<div class="profile-name">${escapeHtml(m.surname)} ${escapeHtml(m.firstName)} ${escapeHtml(m.otherName || '')}</div><div class="profile-badge"><i class="fas fa-id-card"></i> ${escapeHtml(m.stateCodeNumber || 'N/A')}</div><div class="profile-badge" style="margin-left: 8px;"><i class="fas fa-flag-checkered"></i> ${m.status || 'Serving'}</div>${executivePositions.length ? `<div class="profile-badge" style="margin-left: 8px; background: #ffd700; color: #333;"><i class="fas fa-crown"></i> Executive</div>` : ''}</div><div class="info-section"><div class="info-section-title"><i class="fas fa-user"></i> Personal Information</div><div class="info-grid"><div class="info-item"><span class="info-label">File Number</span><span class="info-value">${escapeHtml(m.fileNumber || 'N/A')}</span></div><div class="info-item"><span class="info-label">Date of Birth</span><span class="info-value">${escapeHtml(m.dob || 'N/A')}</span></div><div class="info-item"><span class="info-label">Sex</span><span class="info-value">${escapeHtml(m.sex || 'N/A')}</span></div><div class="info-item"><span class="info-label">Marital Status</span><span class="info-value">${escapeHtml(m.maritalStatus || 'N/A')}</span></div><div class="info-item"><span class="info-label">Maiden Name</span><span class="info-value">${escapeHtml(m.maidenName || 'N/A')}</span></div></div></div><div class="info-section"><div class="info-section-title"><i class="fas fa-address-card"></i> Contact & Banking</div><div class="info-grid"><div class="info-item"><span class="info-label">Phone</span><span class="info-value">${escapeHtml(m.phone || 'N/A')}</span></div><div class="info-item"><span class="info-label">Email</span><span class="info-value">${escapeHtml(m.email || 'N/A')}</span></div><div class="info-item"><span class="info-label">Bank Name</span><span class="info-value">${escapeHtml(m.bankName || 'N/A')}</span></div><div class="info-item"><span class="info-label">Account Number</span><span class="info-value">${escapeHtml(m.accountNumber || 'N/A')}</span></div><div class="info-item"><span class="info-label">Account Name</span><span class="info-value">${escapeHtml(m.accountName || 'N/A')}</span></div><div class="info-item"><span class="info-label">Call-up Number</span><span class="info-value">${escapeHtml(m.callupNumber || 'N/A')}</span></div><div class="info-item"><span class="info-label">Permanent Address</span><span class="info-value">${escapeHtml(m.permanentAddress || 'N/A')}</span></div></div></div><div class="info-section"><div class="info-section-title"><i class="fas fa-graduation-cap"></i> Education & CDS</div><div class="info-grid"><div class="info-item"><span class="info-label">Course</span><span class="info-value">${escapeHtml(m.course || 'N/A')}</span></div><div class="info-item"><span class="info-label">Institution</span><span class="info-value">${escapeHtml(m.institution || 'N/A')}</span></div><div class="info-item"><span class="info-label">Qualification</span><span class="info-value">${escapeHtml(m.qualification || 'N/A')}</span></div><div class="info-item"><span class="info-label">Grade</span><span class="info-value">${escapeHtml(m.grade || 'N/A')}</span></div><div class="info-item"><span class="info-label">CDS Group</span><span class="info-value">${escapeHtml(group?.name || 'Not assigned')}</span></div><div class="info-item"><span class="info-label">Executive Position</span><span class="info-value"><i class="fas fa-crown" style="color: #d4a017;"></i> ${escapeHtml(executiveText)}</span></div><div class="info-item"><span class="info-label">Batch</span><span class="info-value">${escapeHtml(m.batch || 'N/A')}</span></div><div class="info-item"><span class="info-label">PPA</span><span class="info-value">${escapeHtml(m.ppa || 'N/A')}</span></div></div></div><div class="info-section"><div class="info-section-title"><i class="fas fa-heartbeat"></i> Health & Emergency</div><div class="info-grid"><div class="info-item"><span class="info-label">Has Illness</span><span class="info-value">${m.hasIllness === 'Yes' ? 'Yes' : 'No'}</span></div>${m.hasIllness === 'Yes' ? `<div class="info-item"><span class="info-label">Illness Details</span><span class="info-value">${escapeHtml(m.illnessDetails || 'N/A')}</span></div>` : ''}<div class="info-item"><span class="info-label">Next of Kin</span><span class="info-value">${escapeHtml(m.nextOfKinName || 'N/A')} (${escapeHtml(m.nextOfKinPhone || 'N/A')})</span></div><div class="info-item"><span class="info-label">Emergency Contact</span><span class="info-value">${escapeHtml(m.emergencyName || 'N/A')} - ${escapeHtml(m.emergencyPhone || 'N/A')}</span></div></div></div>`; document.getElementById('memberDetailModal').classList.add('active'); }
     
     function closeMemberDetailModal() { document.getElementById('memberDetailModal').classList.remove('active'); currentViewingMember = null; }
+    const viewMemberDetailsBase = viewMemberDetails;
+    viewMemberDetails = function(memberId) {
+        viewMemberDetailsBase(memberId);
+        const member = appData.corpsMembers.find(item => item.id === memberId);
+        if (!member || member.status !== 'Service Extended') return;
+        document.getElementById('memberDetailContent').insertAdjacentHTML('beforeend', `<div class="info-section"><div class="info-section-title"><i class="fas fa-clock"></i> Service Extension</div><div class="info-grid"><div class="info-item"><span class="info-label">Duration</span><span class="info-value">${escapeHtml(member.extensionDuration || 'N/A')}</span></div><div class="info-item"><span class="info-label">New POP Date</span><span class="info-value">${escapeHtml(member.newPopDate || 'N/A')}</span></div><div class="info-item"><span class="info-label">Reason</span><span class="info-value">${escapeHtml(member.extensionReason || 'N/A')}</span></div></div></div>`);
+    };
     function exportMemberProfileToPDF() { const content = document.getElementById('memberDetailContent').cloneNode(true); const printWindow = window.open('', '_blank'); printWindow.document.write(`<html><head><title>Member Profile</title><style>body{font-family: 'Segoe UI', Arial, sans-serif; padding: 20px;}.profile-header{background: #004E2B; color: white; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px;}.profile-avatar{width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid white;}.info-section{background: #f8f9fa; border-radius: 8px; padding: 15px; margin-bottom: 15px;}.info-section-title{font-weight: bold; color: #004E2B; border-bottom: 2px solid #00A86B; padding-bottom: 5px; margin-bottom: 10px;}.info-grid{display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;}.info-label{font-size: 11px; color: #6c757d; text-transform: uppercase;}.info-value{font-size: 13px; color: #333;}</style></head><body>${content.outerHTML}</body></html>`); printWindow.document.close(); printWindow.print(); }
     function exportMemberProfileToExcel() { const member = currentViewingMember; if (!member) return; const group = appData.groups.find(g => g.id === member.groupId); const csvData = [['Field', 'Value'],['Full Name', `${member.surname} ${member.firstName} ${member.otherName || ''}`],['State Code', member.stateCodeNumber || ''],['Phone', member.phone || ''],['Email', member.email || ''],['CDS Group', group?.name || 'Not assigned'],['Batch', member.batch || ''],['PPA', member.ppa || ''],['Status', member.status || 'Serving']]; const csv = csvData.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n'); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${member.surname}_${member.firstName}_profile.csv`; a.click(); URL.revokeObjectURL(blob); showNotification('Profile exported to Excel', 'success'); }
     function closeMeetingDetailModal() { document.getElementById('meetingDetailModal').classList.remove('active'); }

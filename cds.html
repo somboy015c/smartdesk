@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart CDS - Provost Attendance</title>
+    <link rel="icon" type="image/x-icon" href="sd.png">
+    <style>
+        :root {
+            --primary: #004E2B;
+            --primary-light: #0a6e41;
+            --accent: #00A86B;
+            --ink: #17211c;
+            --muted: #6b7280;
+            --line: #d8dee4;
+            --surface: #ffffff;
+            --soft: #f5f7f6;
+            --success: #198754;
+            --danger: #dc3545;
+            --warning: #b7791f;
+            --info: #0f6f8f;
+            --radius: 8px;
+            --shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--ink);
+            background: linear-gradient(135deg, #eef4f0 0%, #f9fbfa 55%, #eef5f7 100%);
+        }
+
+        button, input, select {
+            font: inherit;
+        }
+
+        .hidden { display: none !important; }
+
+        .login-screen {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+        }
+
+        .login-card, .panel, .member-card, .modal {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 430px;
+            padding: 28px;
+            text-align: center;
+        }
+
+        .brand-logo {
+            width: min(260px, 80%);
+            height: auto;
+            margin-bottom: 18px;
+        }
+
+        .field {
+            margin-bottom: 14px;
+            text-align: left;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--primary);
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .control {
+            width: 100%;
+            padding: 12px 13px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: #fff;
+            color: var(--ink);
+        }
+
+        .control:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 168, 107, 0.15);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            border: 0;
+            border-radius: var(--radius);
+            padding: 10px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            min-height: 42px;
+        }
+
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-secondary { background: #eef2f0; color: var(--primary); border: 1px solid var(--line); }
+        .btn-warning { background: #fff3cd; color: #6f4e00; border: 1px solid #f1d28b; }
+        .btn-block { width: 100%; }
+
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--primary);
+            color: #fff;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .topbar-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .topbar-title img {
+            width: 34px;
+            height: 34px;
+            object-fit: contain;
+            background: rgba(255,255,255,0.12);
+            border-radius: 50%;
+            padding: 4px;
+        }
+
+        .topbar-title strong {
+            display: block;
+            font-size: 0.98rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .topbar-title span {
+            display: block;
+            font-size: 0.75rem;
+            opacity: 0.75;
+        }
+
+        .main {
+            width: min(1040px, 100%);
+            margin: 0 auto;
+            padding: 18px 14px 26px;
+            flex: 1;
+        }
+
+        .tabs {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tab-btn {
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--primary);
+            border-radius: var(--radius);
+            padding: 10px 8px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        .panel {
+            padding: 18px;
+            margin-bottom: 16px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .panel-title {
+            margin: 0;
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .summary-card {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 13px;
+            background: var(--soft);
+        }
+
+        .summary-number {
+            color: var(--primary);
+            font-size: 1.45rem;
+            font-weight: 800;
+        }
+
+        .summary-label {
+            color: var(--muted);
+            font-size: 0.78rem;
+            margin-top: 3px;
+        }
+
+        .detail-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .detail {
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 11px;
+            background: #fff;
+        }
+
+        .detail span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .detail strong {
+            display: block;
+            margin-top: 3px;
+            word-break: break-word;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .attendance-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 160px;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .member-card {
+            padding: 20px;
+            min-height: 280px;
+        }
+
+        .counter {
+            color: var(--muted);
+            font-size: 0.86rem;
+            font-weight: 700;
+        }
+
+        .member-name {
+            color: var(--primary);
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            line-height: 1.1;
+            margin: 14px 0 8px;
+            word-break: break-word;
+        }
+
+        .state-code {
+            font-size: 1.05rem;
+            font-weight: 800;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 5px 11px;
+            font-size: 0.78rem;
+            font-weight: 800;
+        }
+
+        .badge-present { background: #d8f3df; color: #105c2f; }
+        .badge-absent { background: #f8d7da; color: #842029; }
+        .badge-info { background: #d8eef6; color: #0b526b; }
+
+        .mark-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .nav-row {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .empty-state {
+            border: 1px dashed var(--line);
+            border-radius: var(--radius);
+            padding: 22px;
+            text-align: center;
+            color: var(--muted);
+            background: #fff;
+        }
+
+        .notice {
+            margin-top: 12px;
+            padding: 11px 12px;
+            border-radius: var(--radius);
+            font-weight: 700;
+        }
+
+        .notice.success { background: #d8f3df; color: #105c2f; }
+        .notice.error { background: #f8d7da; color: #842029; }
+        .notice.warning { background: #fff3cd; color: #6f4e00; }
+        .notice.info { background: #d8eef6; color: #0b526b; }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.48);
+            z-index: 100;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            width: min(560px, 100%);
+            max-height: 90vh;
+            overflow: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 18px;
+            border-bottom: 1px solid var(--line);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        .modal-body { padding: 18px; }
+
+        .close-btn {
+            border: 0;
+            background: transparent;
+            color: #fff;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+
+        @media (max-width: 760px) {
+            .main { padding: 12px 10px 22px; }
+            .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .summary-grid, .detail-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .attendance-toolbar { grid-template-columns: 1fr; }
+            .panel { padding: 14px; }
+            .topbar { padding: 10px 12px; }
+            .topbar-title strong { font-size: 0.9rem; }
+        }
+
+        @media (max-width: 420px) {
+            .summary-grid, .detail-list, .mark-row, .nav-row { grid-template-columns: 1fr; }
+            .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <section id="loginScreen" class="login-screen">
+        <div class="login-card">
+            <img src="smartdesk.png" alt="Smart Desk" class="brand-logo">
+            <form id="loginForm">
+                <div class="field">
+                    <label class="label" for="loginUsername">Username</label>
+                    <input id="loginUsername" class="control" value="Provost" autocomplete="username">
+                </div>
+                <div class="field">
+                    <label class="label" for="loginPassword">Password</label>
+                    <input id="loginPassword" class="control" value="root" type="password" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+                <div id="loginNotice"></div>
+            </form>
+        </div>
+    </section>
+
+    <section id="appShell" class="app-shell hidden">
+        <header class="topbar">
+            <div class="topbar-title">
+                <img src="sd.png" alt="">
+                <div>
+                    <strong id="topTitle">Smart CDS</strong>
+                    <span id="topSubtitle">Provost Attendance</span>
+                </div>
+            </div>
+            <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+        </header>
+
+        <main class="main">
+            <nav class="tabs" aria-label="CDS App Sections">
+                <button class="tab-btn active" data-panel="dashboard">Dashboard</button>
+                <button class="tab-btn" data-panel="receive">Receive</button>
+                <button class="tab-btn" data-panel="attendance">Attendance</button>
+                <button class="tab-btn" data-panel="submit">Submit</button>
+                <button class="tab-btn" data-panel="settings">Settings</button>
+            </nav>
+
+            <section id="panelDashboard" class="panel-view">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Attendance Session</h2>
+                            <div class="counter" id="sessionSubtitle">No package loaded</div>
+                        </div>
+                        <span class="badge badge-info" id="sessionBadge">Waiting</span>
+                    </div>
+                    <div id="dashboardContent"></div>
+                </div>
+            </section>
+
+            <section id="panelReceive" class="panel-view hidden">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Receive Package</h2>
+                            <div class="counter">Import from LGI/CLO desktop</div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="packageFile">Package File</label>
+                        <input id="packageFile" class="control" type="file" accept=".json">
+                    </div>
+                    <div class="button-row">
+                        <button class="btn btn-primary" id="importPackageBtn">Import Package</button>
+                    </div>
+                    <div class="field" style="margin-top: 18px;">
+                        <label class="label" for="receivePairingCode">Pairing Code</label>
+                        <input id="receivePairingCode" class="control" placeholder="XXXX-XXXX-XXXX">
+                    </div>
+                    <div class="field">
+                        <label class="label" for="desktopSyncUrl">Desktop Sync URL</label>
+                        <input id="desktopSyncUrl" class="control" placeholder="http://192.168.x.x:43178">
+                    </div>
+                    <div class="button-row">
+                        <button class="btn btn-secondary" id="receivePairingBtn">Receive by Code</button>
+                    </div>
+                    <div id="receiveNotice"></div>
+                </div>
+            </section>
+
+            <section id="panelAttendance" class="panel-view hidden">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Take Attendance</h2>
+                            <div class="counter" id="attendanceProgress">0 of 0</div>
+                        </div>
+                        <button class="btn btn-success" id="openSubmitFromAttendance">Submit</button>
+                    </div>
+                    <div class="attendance-toolbar">
+                        <input id="memberSearch" class="control" placeholder="Search by name or state code">
+                        <select id="memberSort" class="control">
+                            <option value="package">Package Order</option>
+                            <option value="stateCode">State Code</option>
+                            <option value="name">Name</option>
+                        </select>
+                    </div>
+                    <div id="attendanceContent"></div>
+                </div>
+            </section>
+
+            <section id="panelSubmit" class="panel-view hidden">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Submit Attendance</h2>
+                            <div class="counter" id="submitSubtitle">No result ready</div>
+                        </div>
+                    </div>
+                    <div id="submitContent"></div>
+                </div>
+            </section>
+
+            <section id="panelSettings" class="panel-view hidden">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 class="panel-title">Settings</h2>
+                            <div class="counter">Provost account</div>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label" for="currentPassword">Current Password</label>
+                        <input id="currentPassword" class="control" type="password">
+                    </div>
+                    <div class="field">
+                        <label class="label" for="newPassword">New Password</label>
+                        <input id="newPassword" class="control" type="password">
+                    </div>
+                    <div class="field">
+                        <label class="label" for="confirmPassword">Confirm Password</label>
+                        <input id="confirmPassword" class="control" type="password">
+                    </div>
+                    <button class="btn btn-primary" id="changePasswordBtn">Change Password</button>
+                    <div id="settingsNotice"></div>
+                </div>
+            </section>
+        </main>
+    </section>
+
+    <div id="submitModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Share Attendance Result</h3>
+                <button class="close-btn" id="closeSubmitModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="submitModalSummary"></div>
+                <div class="button-row">
+                    <button class="btn btn-success" id="downloadResultBtn">Download Result</button>
+                </div>
+                <div class="field" style="margin-top: 16px;">
+                    <label class="label" for="submitPairingCode">Pairing Code</label>
+                    <input id="submitPairingCode" class="control" placeholder="XXXX-XXXX-XXXX">
+                </div>
+                <div class="field">
+                    <label class="label" for="submitSyncUrl">Desktop Sync URL</label>
+                    <input id="submitSyncUrl" class="control" placeholder="http://192.168.x.x:43178">
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-primary" id="sendResultByCodeBtn">Send by Code</button>
+                </div>
+                <div id="submitNotice"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const APP_DATA_KEY = 'smart_cds_app_data_v1';
+        const AUTH_KEY = 'smart_cds_auth_v1';
+        const CDS_SESSION_KEY = 'smart_cds_session_v1';
+        const PAIRING_PACKAGES_KEY = 'smart_desk_pairing_packages_v1';
+        const PAIRING_RESULTS_KEY = 'smart_desk_pairing_results_v1';
+        const appStorage = createPersistentStorage([
+            APP_DATA_KEY,
+            AUTH_KEY,
+            CDS_SESSION_KEY,
+            PAIRING_PACKAGES_KEY,
+            PAIRING_RESULTS_KEY
+        ]);
+
+        let appState = {
+            package: null,
+            records: {},
+            pairingCode: '',
+            syncUrl: ''
+        };
+        let authState = { username: 'Provost', password: 'root' };
+        let currentMemberIndex = 0;
+
+        function createPersistentStorage(keysToMigrate) {
+            if (!window.smartDeskStorage) return window.localStorage;
+            keysToMigrate.forEach(key => {
+                const sqliteValue = window.smartDeskStorage.getItem(key);
+                const browserValue = window.localStorage.getItem(key);
+                if (sqliteValue === null && browserValue !== null) {
+                    window.smartDeskStorage.setItem(key, browserValue);
+                }
+            });
+            return window.smartDeskStorage;
+        }
+
+        function readJson(key, fallback) {
+            try { return JSON.parse(appStorage.getItem(key) || JSON.stringify(fallback)); }
+            catch(e) { return fallback; }
+        }
+
+        function writeJson(key, value) {
+            appStorage.setItem(key, JSON.stringify(value));
+        }
+
+        function saveState() {
+            writeJson(APP_DATA_KEY, appState);
+        }
+
+        function loadState() {
+            appState = { ...appState, ...readJson(APP_DATA_KEY, {}) };
+            authState = { ...authState, ...readJson(AUTH_KEY, {}) };
+            if (!appState.syncUrl) {
+                try { appState.syncUrl = window.smartDeskApp?.getSyncServerUrl?.() || ''; }
+                catch(error) { appState.syncUrl = ''; }
+            }
+        }
+
+        function showNotice(targetId, message, type) {
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            target.innerHTML = message ? `<div class="notice ${type || 'info'}">${escapeHtml(message)}</div>` : '';
+        }
+
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+        }
+
+        function sanitizeFilename(value) {
+            return String(value || 'file').replace(/[^\w.-]+/g, '_').replace(/^_+|_+$/g, '') || 'file';
+        }
+
+        function getDesktopSyncUrl(inputId) {
+            const fieldValue = document.getElementById(inputId)?.value.trim() || '';
+            const savedValue = appState.syncUrl || '';
+            const electronValue = (() => {
+                try { return window.smartDeskApp?.getSyncServerUrl?.() || ''; }
+                catch(error) { return ''; }
+            })();
+            return (fieldValue || savedValue || electronValue).replace(/\/+$/, '');
+        }
+
+        async function fetchPackageFromDesktop(syncUrl, code) {
+            if (!syncUrl) return null;
+            const response = await fetch(`${syncUrl}/package/${encodeURIComponent(code)}`);
+            if (!response.ok) return null;
+            const payload = await response.json();
+            return payload.package || null;
+        }
+
+        async function postResultToDesktop(syncUrl, code, result) {
+            if (!syncUrl) return false;
+            const response = await fetch(`${syncUrl}/result/${encodeURIComponent(code)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ result })
+            });
+            return response.ok;
+        }
+
+        function getMembers() {
+            return appState.package?.members || [];
+        }
+
+        function getMemberName(member) {
+            return member.fullName || [member.surname, member.firstName, member.otherName].filter(Boolean).join(' ').trim();
+        }
+
+        function getFilteredMembers() {
+            const query = document.getElementById('memberSearch').value.trim().toLowerCase();
+            const sort = document.getElementById('memberSort').value;
+            let members = getMembers().filter(member => {
+                const name = getMemberName(member).toLowerCase();
+                const stateCode = String(member.stateCodeNumber || member.stateCode || '').toLowerCase();
+                return !query || name.includes(query) || stateCode.includes(query);
+            });
+            if (sort === 'stateCode') members = members.slice().sort((a, b) => String(a.stateCodeNumber || '').localeCompare(String(b.stateCodeNumber || ''), undefined, { numeric: true }));
+            if (sort === 'name') members = members.slice().sort((a, b) => getMemberName(a).localeCompare(getMemberName(b)));
+            return members;
+        }
+
+        function getCounts() {
+            const members = getMembers();
+            const present = members.filter(member => appState.records[member.id]?.status === 'present').length;
+            const absent = members.filter(member => appState.records[member.id]?.status === 'absent').length;
+            const marked = present + absent;
+            return { total: members.length, present, absent, marked };
+        }
+
+        function normalizePackage(payload) {
+            if (!payload || payload.type !== 'smart-desk-attendance-package') throw new Error('Invalid attendance package.');
+            if (!payload.meeting?.id || !payload.cdsGroup?.id || !Array.isArray(payload.members)) throw new Error('Package is missing meeting, CDS group, or members.');
+            return payload;
+        }
+
+        function loadPackage(payload, pairingCode) {
+            const attendancePackage = normalizePackage(payload);
+            const nextRecords = {};
+            attendancePackage.members.forEach(member => {
+                const existing = appState.records[member.id];
+                nextRecords[member.id] = existing || {
+                    status: member.attendanceStatus ? member.attendanceStatus : '',
+                    timestamp: ''
+                };
+            });
+            appState.package = attendancePackage;
+            appState.records = nextRecords;
+            appState.pairingCode = pairingCode || appState.pairingCode || '';
+            currentMemberIndex = 0;
+            saveState();
+            renderAll();
+            showPanel('dashboard');
+        }
+
+        function buildResult() {
+            if (!appState.package) return null;
+            const now = new Date().toISOString();
+            return {
+                type: 'smart-desk-attendance-result',
+                version: 1,
+                generatedAt: now,
+                meetingId: appState.package.meeting.id,
+                cdsGroupId: appState.package.cdsGroup.id,
+                cdsGroupName: appState.package.cdsGroup.name,
+                submittedBy: { username: authState.username, name: 'CDS Provost' },
+                records: getMembers().map(member => {
+                    const record = appState.records[member.id] || {};
+                    return {
+                        memberId: member.id,
+                        fullName: getMemberName(member),
+                        stateCodeNumber: member.stateCodeNumber || '',
+                        status: record.status || 'absent',
+                        timestamp: record.timestamp || now,
+                        markedBy: 'CDS Provost'
+                    };
+                })
+            };
+        }
+
+        function downloadJson(filename, data) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const anchor = document.createElement('a');
+            anchor.href = URL.createObjectURL(blob);
+            anchor.download = filename;
+            anchor.click();
+            URL.revokeObjectURL(anchor.href);
+        }
+
+        function login(event) {
+            event.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (username.toLowerCase() !== authState.username.toLowerCase() || password !== authState.password) {
+                showNotice('loginNotice', 'Invalid credentials.', 'error');
+                return;
+            }
+            writeJson(CDS_SESSION_KEY, { username: authState.username, timestamp: Date.now() });
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appShell').classList.remove('hidden');
+            renderAll();
+            showPanel(appState.package ? 'dashboard' : 'receive');
+        }
+
+        function logout() {
+            appStorage.removeItem(CDS_SESSION_KEY);
+            document.getElementById('appShell').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        function showPanel(name) {
+            document.querySelectorAll('.panel-view').forEach(panel => panel.classList.add('hidden'));
+            document.getElementById(`panel${name.charAt(0).toUpperCase() + name.slice(1)}`).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(button => button.classList.toggle('active', button.dataset.panel === name));
+            if (name === 'attendance') renderAttendance();
+            if (name === 'submit') renderSubmitPanel();
+        }
+
+        function renderAll() {
+            renderHeader();
+            renderDashboard();
+            renderAttendance();
+            renderSubmitPanel();
+            document.getElementById('desktopSyncUrl').value = appState.syncUrl || '';
+            document.getElementById('submitSyncUrl').value = appState.syncUrl || '';
+        }
+
+        function renderHeader() {
+            const groupName = appState.package?.cdsGroup?.name || 'Smart CDS';
+            const meetingName = appState.package?.meeting?.name || 'Provost Attendance';
+            document.getElementById('topTitle').textContent = groupName;
+            document.getElementById('topSubtitle').textContent = meetingName;
+            document.getElementById('sessionSubtitle').textContent = appState.package ? `${meetingName} - ${appState.package.meeting.date}` : 'No package loaded';
+        }
+
+        function renderDashboard() {
+            const content = document.getElementById('dashboardContent');
+            const badge = document.getElementById('sessionBadge');
+            if (!appState.package) {
+                badge.textContent = 'Waiting';
+                badge.className = 'badge badge-info';
+                content.innerHTML = `<div class="empty-state">No attendance package loaded.</div><div class="button-row"><button class="btn btn-primary" onclick="showPanel('receive')">Receive Package</button></div>`;
+                return;
+            }
+            const counts = getCounts();
+            badge.textContent = counts.marked === counts.total ? 'Ready' : 'In Progress';
+            badge.className = `badge ${counts.marked === counts.total ? 'badge-present' : 'badge-info'}`;
+            const meeting = appState.package.meeting;
+            const group = appState.package.cdsGroup;
+            content.innerHTML = `
+                <div class="detail-list">
+                    <div class="detail"><span>Meeting</span><strong>${escapeHtml(meeting.name)}</strong></div>
+                    <div class="detail"><span>CDS Group</span><strong>${escapeHtml(group.name)}</strong></div>
+                    <div class="detail"><span>Date</span><strong>${escapeHtml(meeting.date)}</strong></div>
+                    <div class="detail"><span>Venue</span><strong>${escapeHtml(meeting.venue || 'Not specified')}</strong></div>
+                </div>
+                <div class="summary-grid">
+                    <div class="summary-card"><div class="summary-number">${counts.total}</div><div class="summary-label">Members</div></div>
+                    <div class="summary-card"><div class="summary-number">${counts.marked}</div><div class="summary-label">Marked</div></div>
+                    <div class="summary-card"><div class="summary-number">${counts.present}</div><div class="summary-label">Present</div></div>
+                    <div class="summary-card"><div class="summary-number">${counts.absent}</div><div class="summary-label">Absent</div></div>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-primary" onclick="showPanel('attendance')">Take Attendance</button>
+                    <button class="btn btn-success" onclick="openSubmitModal()">Submit Attendance</button>
+                </div>`;
+        }
+
+        function renderAttendance() {
+            const content = document.getElementById('attendanceContent');
+            const progress = document.getElementById('attendanceProgress');
+            if (!appState.package) {
+                progress.textContent = '0 of 0';
+                content.innerHTML = `<div class="empty-state">No attendance package loaded.</div><div class="button-row"><button class="btn btn-primary" onclick="showPanel('receive')">Receive Package</button></div>`;
+                return;
+            }
+            const members = getFilteredMembers();
+            if (currentMemberIndex >= members.length) currentMemberIndex = Math.max(0, members.length - 1);
+            const counts = getCounts();
+            progress.textContent = `${counts.marked} of ${counts.total} marked`;
+            if (!members.length) {
+                content.innerHTML = '<div class="empty-state">No matching members found.</div>';
+                return;
+            }
+            const member = members[currentMemberIndex];
+            const record = appState.records[member.id] || { status: 'absent' };
+            const badgeClass = record.status === 'present' ? 'badge-present' : record.status === 'absent' ? 'badge-absent' : 'badge-info';
+            const badgeText = record.status === 'present' ? 'Present' : record.status === 'absent' ? 'Absent' : 'Unmarked';
+            content.innerHTML = `
+                <div class="member-card">
+                    <div class="counter">${currentMemberIndex + 1} of ${members.length}</div>
+                    <div class="member-name">${escapeHtml(getMemberName(member))}</div>
+                    <div class="state-code">${escapeHtml(member.stateCodeNumber || 'No state code')}</div>
+                    <div style="margin-top: 14px;"><span class="badge ${badgeClass}">${badgeText}</span></div>
+                    <div class="mark-row">
+                        <button class="btn btn-success" onclick="markCurrentMember('present')">Present</button>
+                        <button class="btn btn-danger" onclick="markCurrentMember('absent')">Absent</button>
+                    </div>
+                    <div class="nav-row">
+                        <button class="btn btn-secondary" onclick="moveMember(-1)">&larr; Previous</button>
+                        <button class="btn btn-secondary" onclick="moveMember(1)">Next &rarr;</button>
+                    </div>
+                    <div class="button-row">
+                        <button class="btn btn-warning" onclick="speakCurrentMember()">Speak Name</button>
+                    </div>
+                </div>`;
+        }
+
+        function markCurrentMember(status) {
+            const members = getFilteredMembers();
+            const member = members[currentMemberIndex];
+            if (!member) return;
+            appState.records[member.id] = { status, timestamp: new Date().toISOString() };
+            saveState();
+            if (currentMemberIndex < members.length - 1) currentMemberIndex++;
+            renderAll();
+        }
+
+        function moveMember(delta) {
+            const members = getFilteredMembers();
+            currentMemberIndex = Math.max(0, Math.min(members.length - 1, currentMemberIndex + delta));
+            renderAttendance();
+        }
+
+        function speakCurrentMember() {
+            const members = getFilteredMembers();
+            const member = members[currentMemberIndex];
+            if (!member || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(getMemberName(member));
+            utterance.rate = 0.92;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function renderSubmitPanel() {
+            const content = document.getElementById('submitContent');
+            const subtitle = document.getElementById('submitSubtitle');
+            if (!appState.package) {
+                subtitle.textContent = 'No result ready';
+                content.innerHTML = `<div class="empty-state">No attendance package loaded.</div><div class="button-row"><button class="btn btn-primary" onclick="showPanel('receive')">Receive Package</button></div>`;
+                return;
+            }
+            const counts = getCounts();
+            subtitle.textContent = `${counts.marked} of ${counts.total} records`;
+            content.innerHTML = `
+                <div class="summary-grid">
+                    <div class="summary-card"><div class="summary-number">${counts.total}</div><div class="summary-label">Members</div></div>
+                    <div class="summary-card"><div class="summary-number">${counts.present}</div><div class="summary-label">Present</div></div>
+                    <div class="summary-card"><div class="summary-number">${counts.absent}</div><div class="summary-label">Absent</div></div>
+                    <div class="summary-card"><div class="summary-number">${counts.marked}</div><div class="summary-label">Marked</div></div>
+                </div>
+                <div class="button-row">
+                    <button class="btn btn-success" onclick="openSubmitModal()">Share Result</button>
+                </div>`;
+        }
+
+        function openSubmitModal() {
+            if (!appState.package) {
+                showPanel('receive');
+                return;
+            }
+            const counts = getCounts();
+            document.getElementById('submitModalSummary').innerHTML = `
+                <div class="detail-list">
+                    <div class="detail"><span>Meeting</span><strong>${escapeHtml(appState.package.meeting.name)}</strong></div>
+                    <div class="detail"><span>CDS Group</span><strong>${escapeHtml(appState.package.cdsGroup.name)}</strong></div>
+                    <div class="detail"><span>Present</span><strong>${counts.present}</strong></div>
+                    <div class="detail"><span>Absent</span><strong>${counts.absent}</strong></div>
+                </div>`;
+            document.getElementById('submitPairingCode').value = appState.pairingCode || '';
+            document.getElementById('submitSyncUrl').value = appState.syncUrl || '';
+            showNotice('submitNotice', '', 'info');
+            document.getElementById('submitModal').classList.add('active');
+        }
+
+        function closeSubmitModal() {
+            document.getElementById('submitModal').classList.remove('active');
+        }
+
+        function downloadResult() {
+            const result = buildResult();
+            if (!result) return;
+            const name = `${sanitizeFilename(result.cdsGroupName)}_${sanitizeFilename(appState.package.meeting.name)}_${appState.package.meeting.date}_result.json`;
+            downloadJson(name, result);
+            showNotice('submitNotice', 'Attendance result downloaded.', 'success');
+        }
+
+        async function sendResultByCode() {
+            const code = document.getElementById('submitPairingCode').value.trim().toUpperCase();
+            if (!code) {
+                showNotice('submitNotice', 'Enter the pairing code from the desktop app.', 'error');
+                return;
+            }
+            const syncUrl = getDesktopSyncUrl('submitSyncUrl');
+            const result = buildResult();
+            const results = readJson(PAIRING_RESULTS_KEY, {});
+            results[code] = { result, createdAt: new Date().toISOString() };
+            writeJson(PAIRING_RESULTS_KEY, results);
+            appState.pairingCode = code;
+            appState.syncUrl = syncUrl;
+            saveState();
+            if (syncUrl) {
+                try {
+                    const sent = await postResultToDesktop(syncUrl, code, result);
+                    showNotice('submitNotice', sent ? 'Attendance result sent to desktop sync URL.' : 'Saved locally, but desktop sync did not accept the result.', sent ? 'success' : 'warning');
+                    return;
+                } catch(error) {
+                    showNotice('submitNotice', `Saved locally, but desktop sync failed: ${error.message}`, 'warning');
+                    return;
+                }
+            }
+            showNotice('submitNotice', 'Attendance result sent by pairing code.', 'success');
+        }
+
+        function importPackageFromFile() {
+            const file = document.getElementById('packageFile').files[0];
+            if (!file) {
+                showNotice('receiveNotice', 'Select an attendance package file.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = event => {
+                try {
+                    loadPackage(JSON.parse(event.target.result), '');
+                    showNotice('receiveNotice', 'Attendance package imported.', 'success');
+                } catch(error) {
+                    showNotice('receiveNotice', error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function receiveByPairingCode() {
+            const code = document.getElementById('receivePairingCode').value.trim().toUpperCase();
+            if (!code) {
+                showNotice('receiveNotice', 'Enter a pairing code.', 'error');
+                return;
+            }
+            const syncUrl = getDesktopSyncUrl('desktopSyncUrl');
+            appState.syncUrl = syncUrl;
+            saveState();
+            const packages = readJson(PAIRING_PACKAGES_KEY, {});
+            let stored = packages[code]?.package || packages[code];
+            if (!stored && syncUrl) {
+                try {
+                    stored = await fetchPackageFromDesktop(syncUrl, code);
+                } catch(error) {
+                    showNotice('receiveNotice', `Could not reach desktop sync URL: ${error.message}`, 'error');
+                    return;
+                }
+            }
+            if (!stored) {
+                showNotice('receiveNotice', 'No attendance package found for that code.', 'error');
+                return;
+            }
+            try {
+                loadPackage(stored, code);
+                showNotice('receiveNotice', 'Attendance package received.', 'success');
+            } catch(error) {
+                showNotice('receiveNotice', error.message, 'error');
+            }
+        }
+
+        function changePassword() {
+            const current = document.getElementById('currentPassword').value;
+            const next = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            if (current !== authState.password) {
+                showNotice('settingsNotice', 'Current password is incorrect.', 'error');
+                return;
+            }
+            if (!next || next.length < 4) {
+                showNotice('settingsNotice', 'New password must be at least 4 characters.', 'error');
+                return;
+            }
+            if (next !== confirm) {
+                showNotice('settingsNotice', 'New passwords do not match.', 'error');
+                return;
+            }
+            authState.password = next;
+            writeJson(AUTH_KEY, authState);
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            showNotice('settingsNotice', 'Password changed.', 'success');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', login);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+        document.querySelectorAll('.tab-btn').forEach(button => button.addEventListener('click', () => showPanel(button.dataset.panel)));
+        document.getElementById('memberSearch').addEventListener('input', () => { currentMemberIndex = 0; renderAttendance(); });
+        document.getElementById('memberSort').addEventListener('change', () => { currentMemberIndex = 0; renderAttendance(); });
+        document.getElementById('importPackageBtn').addEventListener('click', importPackageFromFile);
+        document.getElementById('receivePairingBtn').addEventListener('click', receiveByPairingCode);
+        document.getElementById('openSubmitFromAttendance').addEventListener('click', openSubmitModal);
+        document.getElementById('closeSubmitModal').addEventListener('click', closeSubmitModal);
+        document.getElementById('downloadResultBtn').addEventListener('click', downloadResult);
+        document.getElementById('sendResultByCodeBtn').addEventListener('click', sendResultByCode);
+        document.getElementById('changePasswordBtn').addEventListener('click', changePassword);
+
+        loadState();
+        if (readJson(CDS_SESSION_KEY, null)) {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appShell').classList.remove('hidden');
+            renderAll();
+            showPanel(appState.package ? 'dashboard' : 'receive');
+        }
+    </script>
+</body>
+</html>
